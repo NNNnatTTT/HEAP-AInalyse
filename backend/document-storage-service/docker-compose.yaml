@@ -1,12 +1,12 @@
 services:
-  session:
+  document-storage-service:
     build:
       context: .
       dockerfile: Dockerfile
-    image: yiluan2023/session:1.0
-    container_name: session
+    image: yiluan2023/document-storage-service:1.0
+    container_name: document-storage-service
     ports:
-      - "9697:9697"
+      - "4567:4567"
     environment:
       SUPABASE_URL: https://zlmaxfrnzadneyrgrotm.supabase.co
       SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsbWF4ZnJuemFkbmV5cmdyb3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MTY4NDEsImV4cCI6MjA1ODA5Mjg0MX0.SNUFijz1UbZEE_nvEdukjyPuPOAr2uJpXL_2gIO27tw
