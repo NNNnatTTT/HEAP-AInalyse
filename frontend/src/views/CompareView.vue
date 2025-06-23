@@ -1,8 +1,8 @@
 <template>
-  <div class="min-w-screen mx-auto p-8 font-sans bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200">
+  <div class="min-w-screen min-h-screen mx-auto p-8 font-sans bg-gradient-to-r from-blue-600 to-purple-600">
     <div class="text-center mb-12">
-      <h1 class="text-4xl font-bold text-gray-800 mb-2 drop-shadow-lg">Contract Comparison</h1>
-      <p class="text-lg text-gray-800">Upload two contracts to compare their contents side by side</p>
+      <h1 class="text-4xl font-bold text-white mb-2 drop-shadow-lg">Contract Comparison</h1>
+      <p class="text-lg text-white">Upload two contracts to compare their contents side by side</p>
     </div>
 
     <div class="mb-12">

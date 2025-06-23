@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-400 via-blue-300 to-blue-200 py-8">
+  <div class="min-h-screen bg-gradient-to-r from-blue-600 to-purple-600 py-8">
     <div class="max-w-6xl mx-auto px-4">
       <!-- Header Section -->
-      <div class="text-center mb-12 text-grey-800">
+      <div class="text-center mb-12 text-white">
         <h1 class="text-5xl font-bold mb-4 drop-shadow-lg">
           Contract Analysis Tool
         </h1>

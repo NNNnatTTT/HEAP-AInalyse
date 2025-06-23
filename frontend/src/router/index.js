@@ -6,8 +6,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      component: () => import('../views/LandingPage.vue')
+    },
+    {
+      path: '/home',
       name: 'home',
-      component: HomeView,
+      component: () => import('../views/HomeView.vue'),
     },
     {
       path: '/about',
@@ -24,6 +28,10 @@ const router = createRouter({
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/CompareView.vue'),
+    },
+    {
+      path: '/:notFound(.*)',
+      component: () => import('../views/NotFoundView.vue'),
     },
   ],
 })
