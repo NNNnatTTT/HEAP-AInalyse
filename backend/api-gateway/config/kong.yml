@@ -1,0 +1,214 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+
+  - name: auth-service
+    url: http://auth:5001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
+
+  - name: analytics-service
+    url: http://analytics:6969
+    routes:
+      - name: analytics-route
+        paths:
+          - /analytics
+        strip_path: true
+
+  - name: classpartrecording-service
+    url: http://classpartrecording:9698
+    routes:
+      - name: classpartrecording-route
+        paths:
+          - /cpr
+        strip_path: true
+  # - name: cpr-composite-service
+  #   url: http://cpr-composite:9998
+  #   routes:
+  #     - name: cpr-composite-route
+  #       paths:
+  #         - /cpr-composite
+  #       strip_path: true
+  - name: transcript-service
+    url: http://transcript:9997
+    routes:
+      - name: transcript-route
+        paths:
+          - /transcript
+        strip_path: true
+
+  - name: classroom-service
+    url: http://classroom:9696
+    routes:
+      - name: classroom-route
+        paths:
+          - /classroom
+        strip_path: true
+
+  - name: session-service
+    url: http://session:9697
+    routes:
+      - name: session-route
+        paths:
+          - /session
+        strip_path: true
+
+  - name: transcribe-service
+    url: http://transcribe:3940
+    routes:
+      - name: transcribe-route
+        paths:
+          - /transcribe
+        strip_path: true
+
+  - name: smartquiz-service
+    url: http://smartquiz:5000
+    routes:
+      - name: smartquiz-route
+        paths:
+          - /api/v1
+        strip_path: false
+
+  - name: endquiz-service
+    url: http://endquiz:5001
+    routes:
+      - name: endquiz-route
+        paths:
+          - /api/v1/composite/quiz
+        strip_path: false
+
+  - name: reflection-service
+    url: http://reflection:3001
+    routes:
+      - name: reflection-route
+        paths:
+          - /reflection
+        strip_path: true
+
+  - name: displayquiz-service
+    url: http://displayquiz:3000
+    routes:
+      - name: displayquiz-route
+        paths:
+          - /displayquiz
+        strip_path: true
+        protocols: 
+          - http
+          - https
+
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        - OPTIONS
+        - HEAD
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - X-Auth-Token
+        - Authorization
+        - Upgrade
+        - Connection
+        - Sec-WebSocket-Key
+        - Sec-WebSocket-Version
+        - Sec-WebSocket-Extensions
+        - Sec-WebSocket-Protocol
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+    enabled: true
+
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - "Connection: Upgrade"  # Correct format for header
+          - "Upgrade: websocket"   # Correct format for headers
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: analytics-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: classpartrecording-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: classroom-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: session-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: transcribe-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: smartquiz-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+    service: reflection-service
+    enabled: true
+
+consumers:
+  - username: login_server_issuer
+    jwt_secrets:
+      - key: "auth_service"  # This is the 'kid' that will be in the JWT header
+        algorithm: HS256
+        secret: "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"
