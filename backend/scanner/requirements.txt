@@ -2,3 +2,4 @@ flask
 supabase
 flask_cors
 requests
+fitz
