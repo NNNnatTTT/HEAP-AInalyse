@@ -2,3 +2,7 @@ flask
 supabase
 flask_cors
 requests
+pytesseract
+pdf2image
+pillow
+poppler-utils
