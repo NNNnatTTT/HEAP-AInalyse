@@ -58,6 +58,14 @@ services:
           - /upload
         strip_path: true
 
+  - name: analyse-service
+    url: http://analyse-service:5008
+    routes:
+      - name: analyse-route
+        paths:
+          - /analyse
+        strip_path: true
+
 plugins:
   - name: cors
     config:
@@ -183,6 +191,20 @@ plugins:
       uri_param_names: []
       cookie_names: []
     service: upload-service
+    enabled: true
+
+  - name: jwt
+    config:
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify:
+        - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
+    service: analyse-service
     enabled: true
 
 consumers:
