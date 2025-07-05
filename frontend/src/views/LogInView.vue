@@ -16,6 +16,36 @@
       
       <div class="bg-white shadow-xl rounded-lg p-8">
         <form @submit.prevent="handleSubmit" class="space-y-6">
+          <!-- Add these after <form @submit.prevent="handleSubmit" class="space-y-6"> -->
+
+<!-- Success Message -->
+<div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="ml-3">
+      <p class="text-sm text-green-800">{{ successMessage }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Error Message -->
+<div v-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="ml-3">
+      <p class="text-sm text-red-800">{{ error }}</p>
+    </div>
+  </div>
+</div>
+
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
               Email address
@@ -99,6 +129,8 @@
 </template>
 
 <script>
+import { authService } from '@/services'
+
 export default {
   name: 'LogInView',
   data() {
@@ -108,34 +140,50 @@ export default {
         password: '',
         remember: false
       },
-      showPassword: false,
-      loading: false
+      showPassword: false,  // Added missing property
+      loading: false,
+      error: null,
+      successMessage: null
+    }
+  },
+  computed: {
+    isFormValid() {
+      return this.form.email && this.form.password
     }
   },
   methods: {
-    async handleSubmit() {
+    async handleSubmit() {  // Changed from handleLogin to match template
+      if (!this.isFormValid) return
+      
       this.loading = true
+      this.error = null
+      this.successMessage = null
       
       try {
-        // Replace with your actual authentication logic
-        console.log('Login attempt:', this.form)
+        // Match the Flask auth service expected format
+        const response = await authService.login({
+          Email: this.form.email,    // Capital 'E' to match Flask service
+          Password: this.form.password  // Capital 'P' to match Flask service
+        })
         
-        // Example API call
-        // const response = await this.$http.post('/api/login', {
-        //   email: this.form.email,
-        //   password: this.form.password,
-        //   remember: this.form.remember
-        // })
+        // Store JWT token from auth service response
+        localStorage.setItem('jwt_token', response.data.access_token)  // Changed from 'token' to 'access_token'
         
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Store user info if needed
+        if (response.data.user) {
+          localStorage.setItem('user_info', JSON.stringify(response.data.user))
+        }
         
-        // Handle successful login
-        // this.$router.push('/dashboard')
+        this.successMessage = 'Login successful! Redirecting...'
+        
+        // Redirect to home page
+        setTimeout(() => {
+          this.$router.push('/home')
+        }, 1000)
         
       } catch (error) {
-        console.error('Login failed:', error)
-        // Handle error (show toast, etc.)
+        console.error('Login error:', error)
+        this.error = error.response?.data?.msg || 'Invalid email or password'  // Changed from 'message' to 'msg'
       } finally {
         this.loading = false
       }

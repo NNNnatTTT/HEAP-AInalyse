@@ -124,128 +124,30 @@
 </template>
 
 <script>
+import { uploadService, analysisService } from '@/services'
+
 export default {
   name: 'HomeView',
   data() {
     return {
       selectedFile: null,
-      isDragOver: false,
-      isUploading: false,
-      uploadProgress: 0,
-      errorMessage: '',
-      successMessage: '',
-      allowedTypes: [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-        'image/jpeg',
-        'image/jpg',
-        'image/png',
-        'image/gif'
-      ],
-      maxFileSize: 10 * 1024 * 1024 // 10MB
+      uploading: false,
+      error: null,
+      analysisResult: null
     }
   },
   methods: {
-    triggerFileInput() {
-      this.$refs.fileInput.click()
-    },
-    
     handleFileSelect(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.validateAndSetFile(file)
-      }
+      this.selectedFile = event.target.files[0]
+      this.error = null
+      this.analysisResult = null
     },
     
     handleDrop(event) {
       event.preventDefault()
-      this.isDragOver = false
-      const file = event.dataTransfer.files[0]
-      if (file) {
-        this.validateAndSetFile(file)
-      }
-    },
-    
-    handleDragOver(event) {
-      event.preventDefault()
-      this.isDragOver = true
-    },
-    
-    handleDragLeave() {
-      this.isDragOver = false
-    },
-    
-    validateAndSetFile(file) {
-      this.clearMessages()
-      
-      // Check file type
-      if (!this.allowedTypes.includes(file.type)) {
-        this.errorMessage = 'Please select a valid file format (PDF, DOCX, DOC, or image)'
-        return
-      }
-      
-      // Check file size
-      if (file.size > this.maxFileSize) {
-        this.errorMessage = 'File size must be less than 10MB'
-        return
-      }
-      
-      this.selectedFile = file
-      this.successMessage = 'File selected successfully!'
-    },
-    
-    removeFile() {
-      this.selectedFile = null
-      this.clearMessages()
-      this.$refs.fileInput.value = ''
-    },
-    
-    async uploadFile() {
-      if (!this.selectedFile) return
-      
-      this.isUploading = true
-      this.uploadProgress = 0
-      this.clearMessages()
-      
-      try {
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          if (this.uploadProgress < 90) {
-            this.uploadProgress += Math.random() * 20
-          }
-        }, 200)
-        
-        // Simulate API call
-        const formData = new FormData()
-        formData.append('contract', this.selectedFile)
-        
-        // Replace this with your actual API endpoint
-        // const response = await fetch('/api/analyze-contract', {
-        //   method: 'POST',
-        //   body: formData
-        // })
-        
-        // Simulate processing time
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        
-        clearInterval(progressInterval)
-        this.uploadProgress = 100
-        
-        this.successMessage = 'Contract uploaded and analyzed successfully!'
-        
-        // Navigate to results page or show results
-        // this.$router.push('/results')
-        
-      } catch (error) {
-        this.errorMessage = 'Failed to upload and analyze the contract. Please try again.'
-        console.error('Upload error:', error)
-      } finally {
-        this.isUploading = false
-        setTimeout(() => {
-          this.uploadProgress = 0
-        }, 2000)
-      }
+      this.selectedFile = event.dataTransfer.files[0]
+      this.error = null
+      this.analysisResult = null
     },
     
     formatFileSize(bytes) {
@@ -256,16 +158,46 @@ export default {
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     },
     
-    getFileIcon(fileType) {
-      if (fileType.includes('pdf')) return '📄'
-      if (fileType.includes('word') || fileType.includes('document')) return '📝'
-      if (fileType.includes('image')) return '🖼️'
-      return '📄'
-    },
-    
-    clearMessages() {
-      this.errorMessage = ''
-      this.successMessage = ''
+    async uploadFile() {
+      if (!this.selectedFile) return
+      
+      // Validate file size (10MB limit)
+      if (this.selectedFile.size > 10 * 1024 * 1024) {
+        this.error = 'File size must be less than 10MB'
+        return
+      }
+      
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'image/jpeg', 'image/png', 'image/gif']
+      if (!allowedTypes.includes(this.selectedFile.type)) {
+        this.error = 'Please upload a valid file format (PDF, DOCX, DOC, JPG, PNG, GIF)'
+        return
+      }
+      
+      this.uploading = true
+      this.error = null
+      
+      try {
+        const formData = new FormData()
+        formData.append('file', this.selectedFile)
+        
+        // Upload file through Kong gateway
+        const uploadResponse = await uploadService.uploadContract(formData)
+        const contractId = uploadResponse.data.contractId
+        
+        // Trigger analysis
+        const analysisResponse = await analysisService.analyzeContract(contractId)
+        this.analysisResult = analysisResponse.data
+        
+        // Clear selected file after successful upload
+        this.selectedFile = null
+        
+      } catch (error) {
+        console.error('Upload/Analysis error:', error)
+        this.error = error.response?.data?.message || 'Upload failed. Please try again.'
+      } finally {
+        this.uploading = false
+      }
     }
   }
 }

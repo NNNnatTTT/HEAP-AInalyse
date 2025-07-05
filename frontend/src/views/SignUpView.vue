@@ -171,6 +171,8 @@
 </template>
 
 <script>
+import { authService } from '@/services'
+
 export default {
   name: 'SignUpView',
   data() {
@@ -185,7 +187,9 @@ export default {
       },
       showPassword: false,
       showConfirmPassword: false,
-      loading: false
+      loading: false,
+      error: null,
+      successMessage: null
     }
   },
   computed: {
@@ -195,13 +199,13 @@ export default {
       return !emailRegex.test(this.form.email) ? 'Please enter a valid email address' : null
     },
     passwordMismatch() {
-      if (!this.form.confirmPassword) return null
-      return this.form.password !== this.form.confirmPassword ? 'Passwords do not match' : null
+      return this.form.password !== this.form.confirmPassword && this.form.confirmPassword.length > 0
     },
     passwordStrength() {
       const password = this.form.password
-      let strength = 0
+      if (!password) return 0
       
+      let strength = 0
       if (password.length >= 8) strength++
       if (/[a-z]/.test(password)) strength++
       if (/[A-Z]/.test(password)) strength++
@@ -210,57 +214,63 @@ export default {
       return strength
     },
     isFormValid() {
-      return (
-        this.form.firstName &&
-        this.form.lastName &&
-        this.form.email &&
-        !this.emailError &&
-        this.form.password &&
-        this.passwordStrength >= 3 &&
-        this.form.confirmPassword &&
-        !this.passwordMismatch &&
-        this.form.acceptTerms
-      )
+      return this.form.firstName &&
+             this.form.lastName &&
+             this.form.email && 
+             this.form.password && 
+             this.form.confirmPassword &&
+             this.form.acceptTerms &&
+             !this.emailError &&
+             !this.passwordMismatch &&
+             this.form.password.length >= 8
     }
   },
   methods: {
     getStrengthColor(strength) {
       switch (strength) {
         case 1: return 'bg-red-500'
-        case 2: return 'bg-orange-500'
-        case 3: return 'bg-yellow-500'
+        case 2: return 'bg-yellow-500'
+        case 3: return 'bg-blue-500'
         case 4: return 'bg-green-500'
         default: return 'bg-gray-200'
       }
     },
+    
     async handleSubmit() {
       if (!this.isFormValid) return
       
       this.loading = true
+      this.error = null
+      this.successMessage = null
       
       try {
-        // Replace with your actual registration logic
-        console.log('Registration attempt:', this.form)
+        // Match the auth service expected format
+        const response = await authService.register({
+          Email: this.form.email,  // Capital 'E' to match Flask service
+          Password: this.form.password  // Capital 'P' to match Flask service
+        })
         
-        // Example API call
-        // const response = await this.$http.post('/api/register', {
-        //   firstName: this.form.firstName,
-        //   lastName: this.form.lastName,
-        //   email: this.form.email,
-        //   password: this.form.password
-        // })
+        // Handle successful signup
+        this.successMessage = response.data.message || 'Signup successful! Please check your email to verify your account.'
         
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Clear the form
+        this.form = {
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          acceptTerms: false
+        }
         
-        // Handle successful registration
-        // Store user data or token as needed
-        // localStorage.setItem('user', JSON.stringify(response.data))
-        // this.$router.push('/dashboard') // or '/login' to confirm email first
+        // Optional: Redirect to login page after a delay
+        setTimeout(() => {
+          this.$router.push('/login')
+        }, 3000)
         
       } catch (error) {
-        console.error('Registration failed:', error)
-        // Handle error (show toast, etc.)
+        console.error('Registration error:', error)
+        this.error = error.response?.data?.msg || 'Registration failed. Please try again.'
       } finally {
         this.loading = false
       }

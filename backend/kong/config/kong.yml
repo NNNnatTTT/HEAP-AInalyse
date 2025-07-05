@@ -1,0 +1,195 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: auth-service
+    url: http://auth:5001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
+
+  # - name: open-router-wrapper-service
+  #   url: http://open-router-wrapper:5002
+  #   routes:
+  #     - name: open-router-wrapper-route
+  #       paths:
+  #         - /open-router
+  #       strip_path: true
+
+  # - name: review-service
+  #   url: http://review-service:5003
+  #   routes:
+  #     - name: review-route
+  #       paths:
+  #         - /review
+  #       strip_path: true
+
+  # - name: scanner-service
+  #   url: http://scanner:5004
+  #   routes:
+  #     - name: scanner-route
+  #       paths:
+  #         - /scanner
+  #       strip_path: true
+
+  # - name: suggestion-service
+  #   url: http://suggestion-service:5005
+  #   routes:
+  #     - name: suggestion-route
+  #       paths:
+  #         - /suggestions
+  #       strip_path: true
+
+  # - name: suggestion-history-service
+  #   url: http://suggestion-history:5006
+  #   routes:
+  #     - name: suggestion-history-route
+  #       paths:
+  #         - /suggestion-history
+  #       strip_path: true
+
+  # - name: upload-service
+  #   url: http://upload-service:5007
+  #   routes:
+  #     - name: upload-route
+  #       paths:
+  #         - /upload
+  #       strip_path: true
+
+  # - name: analyse-service
+  #   url: http://analyse-service:5008
+  #   routes:
+  #     - name: analyse-route
+  #       paths:
+  #         - /analyse
+  #       strip_path: true
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        - OPTIONS
+        - HEAD
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - X-Auth-Token
+        - Authorization
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+      preflight_continue: false
+    enabled: true
+
+  # JWT plugins for protected services
+  # - name: jwt
+  #   service: open-router-wrapper-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: review-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: scanner-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: suggestion-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: suggestion-history-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: upload-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: analyse-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+consumers:
+  - username: login_server_issuer
+    jwt_secrets:
+      - key: "auth_service"
+        algorithm: HS256
+        secret: "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"

@@ -143,63 +143,32 @@
 </template>
 
 <script>
+import { uploadService, analysisService } from '@/services'
+
 export default {
   name: 'CompareView',
   data() {
     return {
       contractA: null,
       contractB: null,
-      dragOverA: false,
-      dragOverB: false,
-      isComparing: false,
-      comparisonResults: null
+      comparing: false,
+      comparisonResult: null,
+      error: null
     }
   },
   methods: {
-    handleFileSelect(event, contract) {
-      const file = event.target.files[0]
-      if (file && this.isValidFile(file)) {
-        this[`contract${contract}`] = file
-      }
+    handleFileA(event) {
+      this.contractA = event.target.files[0]
+      this.error = null
+      this.comparisonResult = null
     },
-
-    handleDrop(event, contract) {
-      event.preventDefault()
-      this[`dragOver${contract}`] = false
-      
-      const file = event.dataTransfer.files[0]
-      if (file && this.isValidFile(file)) {
-        this[`contract${contract}`] = file
-      }
+    
+    handleFileB(event) {
+      this.contractB = event.target.files[0]
+      this.error = null
+      this.comparisonResult = null
     },
-
-    isValidFile(file) {
-      const validTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ]
-      
-      if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid document file (PDF, DOC, or DOCX)')
-        return false
-      }
-      
-      // Check file size (e.g., max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB')
-        return false
-      }
-      
-      return true
-    },
-
-    removeFile(contract) {
-      this[`contract${contract}`] = null
-      // Reset file input
-      this.$refs[`fileInput${contract}`].value = ''
-    },
-
+    
     formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes'
       const k = 1024
@@ -207,40 +176,67 @@ export default {
       const i = Math.floor(Math.log(bytes) / Math.log(k))
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
     },
-
+    
+    validateFile(file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        return 'File size must be less than 10MB'
+      }
+      
+      // Check file type
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']
+      if (!allowedTypes.includes(file.type)) {
+        return 'Please upload a valid document format (PDF, DOCX, DOC)'
+      }
+      
+      return null
+    },
+    
     async compareContracts() {
       if (!this.contractA || !this.contractB) return
       
-      this.isComparing = true
+      // Validate both files
+      const errorA = this.validateFile(this.contractA)
+      const errorB = this.validateFile(this.contractB)
+      
+      if (errorA || errorB) {
+        this.error = errorA || errorB
+        return
+      }
+      
+      this.comparing = true
+      this.error = null
       
       try {
-        // Here you would implement your comparison logic
-        // This could involve sending files to a backend API
+        // Upload first contract
+        const formDataA = new FormData()
+        formDataA.append('file', this.contractA)
+        const uploadA = await uploadService.uploadContract(formDataA)
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Upload second contract
+        const formDataB = new FormData()
+        formDataB.append('file', this.contractB)
+        const uploadB = await uploadService.uploadContract(formDataB)
         
-        // Mock comparison results
-        this.comparisonResults = {
-          timestamp: new Date(),
-          fileA: this.contractA.name,
-          fileB: this.contractB.name,
-          // Add your comparison data here
-        }
+        // Trigger comparison analysis through Kong gateway
+        const comparisonResponse = await analysisService.compareContracts({
+          contractAId: uploadA.data.contractId,
+          contractBId: uploadB.data.contractId
+        })
         
-        // Emit event or call parent method if needed
-        this.$emit('comparison-complete', this.comparisonResults)
+        this.comparisonResult = comparisonResponse.data
         
       } catch (error) {
-        console.error('Comparison failed:', error)
-        alert('Failed to compare contracts. Please try again.')
+        console.error('Comparison error:', error)
+        this.error = error.response?.data?.message || 'Comparison failed. Please try again.'
       } finally {
-        this.isComparing = false
+        this.comparing = false
       }
     }
   }
 }
 </script>
+
 
 <style scoped>
 @keyframes spin {
