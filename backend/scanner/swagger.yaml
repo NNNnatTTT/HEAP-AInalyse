@@ -5,7 +5,7 @@ info:
   description: Handles creation, retrieval, and updating of session data stored in Supabase.
 
 servers:
-  - url: http://localhost:9697
+  - url: http://localhost:5004
     description: Local development server
 
 paths:
