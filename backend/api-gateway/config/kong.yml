@@ -10,88 +10,53 @@ services:
           - /auth
         strip_path: true
 
-  - name: analytics-service
-    url: http://analytics:6969
+  - name: open-router-wrapper-service
+    url: http://open-router-wrapper:5002
     routes:
-      - name: analytics-route
+      - name: open-router-wrapper-route
         paths:
-          - /analytics
+          - /open-router
         strip_path: true
 
-  - name: classpartrecording-service
-    url: http://classpartrecording:9698
+  - name: review-service
+    url: http://review-service:5003
     routes:
-      - name: classpartrecording-route
+      - name: review-route
         paths:
-          - /cpr
+          - /review
         strip_path: true
 
-  - name: transcript-service
-    url: http://transcript:9997
+  - name: scanner-service
+    url: http://scanner:5004
     routes:
-      - name: transcript-route
+      - name: scanner-route
         paths:
-          - /transcript
+          - /scanner
         strip_path: true
 
-  - name: classroom-service
-    url: http://classroom:9696
+  - name: suggestion-service
+    url: http://suggestion-service:5005
     routes:
-      - name: classroom-route
+      - name: suggestion-route
         paths:
-          - /classroom
+          - /suggestions
         strip_path: true
 
-  - name: session-service
-    url: http://session:9697
+  - name: suggestion-history-service
+    url: http://suggestion-history:5006
     routes:
-      - name: session-route
+      - name: suggestion-history-route
         paths:
-          - /session
+          - /suggestion-history
         strip_path: true
 
-  - name: transcribe-service
-    url: http://transcribe:3940
+  - name: upload-service
+    url: http://upload-service:5007
     routes:
-      - name: transcribe-route
+      - name: upload-route
         paths:
-          - /transcribe
+          - /upload
         strip_path: true
-
-  - name: smartquiz-service
-    url: http://smartquiz:5000
-    routes:
-      - name: smartquiz-route
-        paths:
-          - /api/v1
-        strip_path: false
-
-  - name: endquiz-service
-    url: http://endquiz:5001
-    routes:
-      - name: endquiz-route
-        paths:
-          - /api/v1/composite/quiz
-        strip_path: false
-
-  - name: reflection-service
-    url: http://reflection:3001
-    routes:
-      - name: reflection-route
-        paths:
-          - /reflection
-        strip_path: true
-
-  - name: displayquiz-service
-    url: http://displayquiz:3000
-    routes:
-      - name: displayquiz-route
-        paths:
-          - /displayquiz
-        strip_path: true
-        protocols: 
-          - http
-          - https
 
 plugins:
   - name: cors
@@ -135,7 +100,7 @@ plugins:
           - "Connection: Upgrade"
           - "Upgrade: websocket"
 
-  # JWT plugins for protected services
+  # JWT plugins for protected services (excluding auth service)
   - name: jwt
     config:
       secret_is_base64: false
@@ -147,7 +112,7 @@ plugins:
         - authorization
       uri_param_names: []
       cookie_names: []
-    service: analytics-service
+    service: open-router-wrapper-service
     enabled: true
 
   - name: jwt
@@ -161,7 +126,7 @@ plugins:
         - authorization
       uri_param_names: []
       cookie_names: []
-    service: classpartrecording-service
+    service: review-service
     enabled: true
 
   - name: jwt
@@ -175,7 +140,7 @@ plugins:
         - authorization
       uri_param_names: []
       cookie_names: []
-    service: classroom-service
+    service: scanner-service
     enabled: true
 
   - name: jwt
@@ -189,7 +154,7 @@ plugins:
         - authorization
       uri_param_names: []
       cookie_names: []
-    service: session-service
+    service: suggestion-service
     enabled: true
 
   - name: jwt
@@ -203,7 +168,7 @@ plugins:
         - authorization
       uri_param_names: []
       cookie_names: []
-    service: transcribe-service
+    service: suggestion-history-service
     enabled: true
 
   - name: jwt
@@ -217,21 +182,7 @@ plugins:
         - authorization
       uri_param_names: []
       cookie_names: []
-    service: smartquiz-service
-    enabled: true
-
-  - name: jwt
-    config:
-      secret_is_base64: false
-      key_claim_name: kid
-      claims_to_verify:
-        - exp
-        - sub
-      header_names:
-        - authorization
-      uri_param_names: []
-      cookie_names: []
-    service: reflection-service
+    service: upload-service
     enabled: true
 
 consumers:
