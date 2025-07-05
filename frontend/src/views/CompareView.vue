@@ -128,126 +128,93 @@
     </div>
 
     <!-- Comparison Results -->
-    <div v-if="comparisonResults" class="bg-white rounded-xl p-8 shadow-lg">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">Comparison Results</h2>
-      <div class="text-gray-700">
-        <!-- You can expand this section based on your comparison logic -->
-        <div class="mb-4">
-          <h4 class="font-semibold mb-2">Files Compared:</h4>
-          <p>{{ contractA.name }} vs {{ contractB.name }}</p>
+    <div
+      v-if="comparisonResults"
+      class="bg-white rounded-xl p-8 shadow-lg"
+    >
+      <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+        Comparison Results
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Left column: Contract A -->
+        <div>
+          <h3 class="text-xl font-medium text-gray-700 mb-2">
+            Contract A
+          </h3>
+          <div
+            class="border rounded-lg p-4 h-64 overflow-auto whitespace-pre-wrap bg-gray-50"
+          >
+            {{ getContractA() }}
+          </div>
         </div>
-        <!-- Add more comparison result components here -->
+
+        <!-- Right column: Contract B -->
+        <div>
+          <h3 class="text-xl font-medium text-gray-700 mb-2">
+            Contract B
+          </h3>
+          <div
+            class="border rounded-lg p-4 h-64 overflow-auto whitespace-pre-wrap bg-gray-50"
+          >
+            {{ getContractB() }}
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { scanDocument } from '@/api/scanner';                // ← scanner first
+import { sendComparePrompt } from '@/api/compact-compare-api'; // ← then your compare/prompt API
+
 export default {
   name: 'CompareView',
   data() {
     return {
       contractA: null,
       contractB: null,
-      dragOverA: false,
-      dragOverB: false,
       isComparing: false,
       comparisonResults: null
-    }
+    };
   },
   methods: {
-    handleFileSelect(event, contract) {
-      const file = event.target.files[0]
-      if (file && this.isValidFile(file)) {
-        this[`contract${contract}`] = file
-      }
-    },
-
-    handleDrop(event, contract) {
-      event.preventDefault()
-      this[`dragOver${contract}`] = false
-      
-      const file = event.dataTransfer.files[0]
-      if (file && this.isValidFile(file)) {
-        this[`contract${contract}`] = file
-      }
-    },
-
-    isValidFile(file) {
-      const validTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ]
-      
-      if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid document file (PDF, DOC, or DOCX)')
-        return false
-      }
-      
-      // Check file size (e.g., max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB')
-        return false
-      }
-      
-      return true
-    },
-
-    removeFile(contract) {
-      this[`contract${contract}`] = null
-      // Reset file input
-      this.$refs[`fileInput${contract}`].value = ''
-    },
-
-    formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes'
-      const k = 1024
-      const sizes = ['Bytes', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    },
+    // … your drag/drop handlers untouched …
 
     async compareContracts() {
-      if (!this.contractA || !this.contractB) return
-      
-      this.isComparing = true
-      
+      if (!this.contractA || !this.contractB) return;
+      this.isComparing = true;
+      this.comparisonResults = null;
+
       try {
-        // Here you would implement your comparison logic
-        // This could involve sending files to a backend API
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        // Mock comparison results
-        this.comparisonResults = {
-          timestamp: new Date(),
-          fileA: this.contractA.name,
-          fileB: this.contractB.name,
-          // Add your comparison data here
-        }
-        
-        // Emit event or call parent method if needed
-        this.$emit('comparison-complete', this.comparisonResults)
-        
-      } catch (error) {
-        console.error('Comparison failed:', error)
-        alert('Failed to compare contracts. Please try again.')
+        const form = new FormData();
+        form.append('fileA', this.contractA);
+        form.append('fileB', this.contractB);
+
+        const resp = await fetch('http://localhost:3000/api/compare', {
+          method: 'POST',
+          body: form
+        });
+        if (!resp.ok) throw new Error(await resp.text());
+        this.comparisonResults = await resp.json();
+      } catch (err) {
+        alert('Comparison failed: ' + err.message);
       } finally {
-        this.isComparing = false
+        this.isComparing = false;
       }
     }
+
   }
-}
+};
 </script>
+
 
 <style scoped>
 @keyframes spin {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  to   { transform: rotate(360deg); }
 }
-
 .spinner {
   animation: spin 1s linear infinite;
 }

@@ -22,7 +22,6 @@
             @dragleave="handleDragLeave"
             @click="triggerFileInput"
           >
-            
             <input 
               ref="fileInput" 
               type="file" 
@@ -30,7 +29,6 @@
               @change="handleFileSelect"
               class="hidden"
             />
-            
             <div v-if="!selectedFile" class="space-y-4">
               <div class="text-6xl mb-4">📄</div>
               <h3 class="text-xl font-semibold text-gray-700 mb-2">
@@ -43,7 +41,6 @@
                 Maximum file size: 10MB
               </p>
             </div>
-            
             <div v-else class="p-4">
               <div class="flex items-center gap-4 bg-gray-100 p-4 rounded-lg">
                 <div class="text-3xl">{{ getFileIcon(selectedFile.type) }}</div>
@@ -60,7 +57,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Upload Button -->
           <div v-if="selectedFile" class="mt-6 text-center">
             <button 
@@ -73,6 +70,16 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Results Section -->
+      <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Contract Summary</h2>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          <li v-for="(clause, i) in analysisResult" :key="i">
+            <strong>{{ clause.title }}:</strong> {{ clause.summary }}
+          </li>
+        </ul>
       </div>
 
       <!-- Features Section -->
@@ -124,6 +131,9 @@
 </template>
 
 <script>
+import { parsePdf, analyseContract } from '@/composables/useContractAnalysis'
+import { setAnalysisResult } from '@/composables/useContractAnalysis'
+
 export default {
   name: 'HomeView',
   data() {
@@ -134,6 +144,7 @@ export default {
       uploadProgress: 0,
       errorMessage: '',
       successMessage: '',
+      analysisResult: null,
       allowedTypes: [
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -150,119 +161,107 @@ export default {
     triggerFileInput() {
       this.$refs.fileInput.click()
     },
-    
-    handleFileSelect(event) {
-      const file = event.target.files[0]
-      if (file) {
-        this.validateAndSetFile(file)
-      }
+    handleFileSelect(e) {
+      const file = e.target.files[0]
+      file && this.validateAndSetFile(file)
     },
-    
-    handleDrop(event) {
-      event.preventDefault()
+    handleDrop(e) {
+      e.preventDefault()
       this.isDragOver = false
-      const file = event.dataTransfer.files[0]
-      if (file) {
-        this.validateAndSetFile(file)
-      }
+      const file = e.dataTransfer.files[0]
+      file && this.validateAndSetFile(file)
     },
-    
-    handleDragOver(event) {
-      event.preventDefault()
+    handleDragOver(e) {
+      e.preventDefault()
       this.isDragOver = true
     },
-    
     handleDragLeave() {
       this.isDragOver = false
     },
-    
     validateAndSetFile(file) {
       this.clearMessages()
-      
-      // Check file type
       if (!this.allowedTypes.includes(file.type)) {
-        this.errorMessage = 'Please select a valid file format (PDF, DOCX, DOC, or image)'
+        this.errorMessage = 'Please select a valid file format'
         return
       }
-      
-      // Check file size
       if (file.size > this.maxFileSize) {
         this.errorMessage = 'File size must be less than 10MB'
         return
       }
-      
       this.selectedFile = file
       this.successMessage = 'File selected successfully!'
     },
-    
     removeFile() {
       this.selectedFile = null
       this.clearMessages()
       this.$refs.fileInput.value = ''
     },
-    
     async uploadFile() {
       if (!this.selectedFile) return
-      
+
       this.isUploading = true
       this.uploadProgress = 0
       this.clearMessages()
-      
+
       try {
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          if (this.uploadProgress < 90) {
-            this.uploadProgress += Math.random() * 20
-          }
-        }, 200)
-        
-        // Simulate API call
-        const formData = new FormData()
-        formData.append('contract', this.selectedFile)
-        
-        // Replace this with your actual API endpoint
-        // const response = await fetch('/api/analyze-contract', {
-        //   method: 'POST',
-        //   body: formData
-        // })
-        
-        // Simulate processing time
-        await new Promise(resolve => setTimeout(resolve, 3000))
-        
-        clearInterval(progressInterval)
+        // 1) Parse PDF into pages array
+        const pages = await parsePdf(this.selectedFile)
+
+        // 2) Build the summary prompt
+        const summaryPrompt = `
+Summarize the main clauses of the employment contract. 
+You are a lawyer with expertise in employment law. 
+Focus on these terms:
+• Job Title
+• Job responsibilities and duties
+• Start Date, Working Hours
+• Compensation (General, Public Holiday, Overtime Pay)
+• Leaves
+• Benefits
+• Probationary period and termination clauses
+• Confidentiality and non-compete clauses
+
+Output a JSON array of objects:
+[{"title":"<Clause Title>","summary":"<Your summary>"}…]
+`
+
+        // 3) Send to AI-wrapper
+        const aiResponse = await analyseContract(pages, summaryPrompt)
+
+        // 4) Parse and store result
+        const raw = aiResponse.choices?.[0]?.message?.content || ''
+        try {
+          this.analysisResult = JSON.parse(raw)
+        } catch {
+          this.analysisResult = [{ title: 'Result', summary: raw }]
+        }
+
+        setAnalysisResult(this.analysisResult)
+        this.$router.push({ name: 'analysis' })
+
         this.uploadProgress = 100
-        
-        this.successMessage = 'Contract uploaded and analyzed successfully!'
-        
-        // Navigate to results page or show results
-        // this.$router.push('/results')
-        
-      } catch (error) {
-        this.errorMessage = 'Failed to upload and analyze the contract. Please try again.'
-        console.error('Upload error:', error)
+        this.successMessage = 'Analysis complete!'
+      } catch (err) {
+        console.error(err)
+        this.errorMessage = err.message || 'Analysis failed'
       } finally {
         this.isUploading = false
-        setTimeout(() => {
-          this.uploadProgress = 0
-        }, 2000)
+        setTimeout(() => (this.uploadProgress = 0), 1500)
       }
     },
-    
     formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes'
       const k = 1024
       const sizes = ['Bytes', 'KB', 'MB', 'GB']
       const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+      return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
     },
-    
-    getFileIcon(fileType) {
-      if (fileType.includes('pdf')) return '📄'
-      if (fileType.includes('word') || fileType.includes('document')) return '📝'
-      if (fileType.includes('image')) return '🖼️'
+    getFileIcon(type) {
+      if (type.includes('pdf')) return '📄'
+      if (type.includes('word')) return '📝'
+      if (type.includes('image')) return '🖼️'
       return '📄'
     },
-    
     clearMessages() {
       this.errorMessage = ''
       this.successMessage = ''

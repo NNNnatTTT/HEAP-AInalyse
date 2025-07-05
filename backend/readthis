@@ -1,0 +1,2 @@
+pip install requests python-dotenv flask
+pip install flask pypdf python-dotenv

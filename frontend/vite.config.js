@@ -17,4 +17,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    proxy: {
+      // forward /scan_document → Flask scanner
+      '/scan_document': {
+        target: 'http://localhost:9697',
+        changeOrigin: true,
+      },
+      // forward /api (eg. /api/ai/analyse) → Flask AI‐wrapper
+      '/api': {
+        target: 'http://localhost:9697',
+        changeOrigin: true,
+      },
+    }
+  }
 })
