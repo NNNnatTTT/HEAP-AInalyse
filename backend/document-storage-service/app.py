@@ -167,4 +167,4 @@ def delete_file(fileID):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5007, debug=True)  # Use port from Kong config
+    app.run(host='0.0.0.0', port=4567, debug=True)  # Use port from Kong config
