@@ -7,7 +7,7 @@
           Contract Analysis Tool
         </h1>
         <p class="text-xl opacity-90 max-w-2xl mx-auto leading-relaxed">
-          Upload your contract document to analyze for suspicious clauses and potential risks
+          Upload your PDF contract document to analyze for suspicious clauses and potential risks
         </p>
       </div>
 
@@ -25,17 +25,17 @@
             <input 
               ref="fileInput" 
               type="file" 
-              accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.gif"
+              accept=".pdf"
               @change="handleFileSelect"
               class="hidden"
             />
             <div v-if="!selectedFile" class="space-y-4">
               <div class="text-6xl mb-4">📄</div>
               <h3 class="text-xl font-semibold text-gray-700 mb-2">
-                Drop your contract here or click to browse
+                Drop your PDF contract here or click to browse
               </h3>
               <p class="text-gray-600 mb-2">
-                Supported formats: PDF, DOCX, DOC, JPG, PNG, GIF
+                Supported format: PDF only
               </p>
               <p class="text-sm text-gray-500">
                 Maximum file size: 10MB
@@ -43,7 +43,7 @@
             </div>
             <div v-else class="p-4">
               <div class="flex items-center gap-4 bg-gray-100 p-4 rounded-lg">
-                <div class="text-3xl">{{ getFileIcon(selectedFile.type) }}</div>
+                <div class="text-3xl">📄</div>
                 <div class="flex-1 text-left">
                   <h4 class="font-semibold text-gray-800 truncate">{{ selectedFile.name }}</h4>
                   <p class="text-sm text-gray-600">{{ formatFileSize(selectedFile.size) }}</p>
@@ -129,7 +129,6 @@
     </div>
   </div>
 </template>
-
 <script>
 import { uploadService, analysisService } from '@/services'
 
@@ -138,24 +137,71 @@ export default {
   data() {
     return {
       selectedFile: null,
-      uploading: false,
-      error: null,
+      isDragOver: false,
+      isUploading: false,
+      uploadProgress: 0,
+      errorMessage: null,
+      successMessage: null,
       analysisResult: null
     }
   },
   methods: {
+    triggerFileInput() {
+      this.$refs.fileInput.click()
+    },
+
     handleFileSelect(event) {
-      this.selectedFile = event.target.files[0]
-      this.error = null
-      this.analysisResult = null
+      const file = event.target.files[0]
+      this.validateAndSetFile(file)
     },
     
     handleDrop(event) {
       event.preventDefault()
-      this.selectedFile = event.dataTransfer.files[0]
-      this.error = null
-      this.analysisResult = null
+      this.isDragOver = false
+      const file = event.dataTransfer.files[0]
+      this.validateAndSetFile(file)
     },
+
+    handleDragOver(event) {
+      event.preventDefault()
+      this.isDragOver = true
+    },
+
+    handleDragLeave() {
+      this.isDragOver = false
+    },
+
+    validateAndSetFile(file) {
+      this.errorMessage = null
+      this.successMessage = null
+      this.analysisResult = null
+
+      if (!file) return
+
+      // Validate file type - PDF only
+      if (file.type !== 'application/pdf') {
+        this.errorMessage = 'Please upload a PDF file only'
+        return
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        this.errorMessage = 'File size must be less than 10MB'
+        return
+      }
+
+      this.selectedFile = file
+      this.successMessage = 'PDF file selected successfully'
+    },
+
+    removeFile() {
+      this.selectedFile = null
+      this.errorMessage = null
+      this.successMessage = null
+      this.analysisResult = null
+      this.$refs.fileInput.value = ''
+    },
+    
     formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes'
       const k = 1024
@@ -167,21 +213,9 @@ export default {
     async uploadFile() {
       if (!this.selectedFile) return
       
-      // Validate file size (10MB limit)
-      if (this.selectedFile.size > 10 * 1024 * 1024) {
-        this.error = 'File size must be less than 10MB'
-        return
-      }
-      
-      // Validate file type
-      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'image/jpeg', 'image/png', 'image/gif']
-      if (!allowedTypes.includes(this.selectedFile.type)) {
-        this.error = 'Please upload a valid file format (PDF, DOCX, DOC, JPG, PNG, GIF)'
-        return
-      }
-      
-      this.uploading = true
-      this.error = null
+      this.isUploading = true
+      this.errorMessage = null
+      this.uploadProgress = 0
       
       try {
         const formData = new FormData()
@@ -191,18 +225,27 @@ export default {
         const uploadResponse = await uploadService.uploadContract(formData)
         const contractId = uploadResponse.data.contractId
         
+        this.uploadProgress = 50
+        
         // Trigger analysis
         const analysisResponse = await analysisService.analyzeContract(contractId)
         this.analysisResult = analysisResponse.data
         
+        this.uploadProgress = 100
+        this.successMessage = 'Contract analyzed successfully!'
+        
         // Clear selected file after successful upload
-        this.selectedFile = null
+        setTimeout(() => {
+          this.selectedFile = null
+          this.$refs.fileInput.value = ''
+        }, 2000)
         
       } catch (error) {
         console.error('Upload/Analysis error:', error)
-        this.error = error.response?.data?.message || 'Upload failed. Please try again.'
+        this.errorMessage = error.response?.data?.message || 'Upload failed. Please try again.'
       } finally {
-        this.uploading = false
+        this.isUploading = false
+        this.uploadProgress = 0
       }
     }
   }
