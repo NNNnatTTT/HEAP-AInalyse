@@ -69,6 +69,50 @@ def add_session(modsecyear):
             
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/compare', methods=['POST'])
+def compare_documents():
+    try:
+        # 1) grab both files from the incoming request
+        fileA = request.files.get('fileA')
+        fileB = request.files.get('fileB')
+        if not fileA or not fileB:
+            return jsonify({"error": "Both fileA and fileB are required"}), 400
+
+        # helper to reuse your existing scan logic via an internal POST
+        def do_scan(f):
+            files = {'file': (f.filename, f.stream, f.mimetype)}
+            r = requests.post('http://localhost:9697/scan_document', files=files)
+            r.raise_for_status()
+            return r.json()
+
+        # 2) scan both PDFs
+        resultA = do_scan(fileA)
+        resultB = do_scan(fileB)
+
+        # 3) send the two JSON blobs to your AI/Gemini service
+        ai_payload = {
+          "mode": "compare",
+          "contractData": {
+            "contract1": resultA,
+            "contract2": resultB
+          }
+        }
+        ai_resp = requests.post(
+          'http://localhost:3000/api/gemini',
+          json=ai_payload
+        )
+        ai_resp.raise_for_status()
+
+        # 4) return the AI’s response as JSON
+        return jsonify(ai_resp.json())
+
+    except requests.HTTPError as e:
+        return jsonify({"error": f"Upstream service error: {e}"}), 502
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/update_active', methods=['POST'])

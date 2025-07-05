@@ -12,3 +12,8 @@
 <script setup>
 // No logic needed here unless you're handling active route programmatically
 </script>
+
+.container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
