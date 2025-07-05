@@ -22,7 +22,6 @@
             @dragleave="handleDragLeave"
             @click="triggerFileInput"
           >
-            
             <input 
               ref="fileInput" 
               type="file" 
@@ -30,7 +29,6 @@
               @change="handleFileSelect"
               class="hidden"
             />
-            
             <div v-if="!selectedFile" class="space-y-4">
               <div class="text-6xl mb-4">📄</div>
               <h3 class="text-xl font-semibold text-gray-700 mb-2">
@@ -43,7 +41,6 @@
                 Maximum file size: 10MB
               </p>
             </div>
-            
             <div v-else class="p-4">
               <div class="flex items-center gap-4 bg-gray-100 p-4 rounded-lg">
                 <div class="text-3xl">{{ getFileIcon(selectedFile.type) }}</div>
@@ -60,7 +57,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Upload Button -->
           <div v-if="selectedFile" class="mt-6 text-center">
             <button 
@@ -73,6 +70,16 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Results Section -->
+      <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Contract Summary</h2>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          <li v-for="(clause, i) in analysisResult" :key="i">
+            <strong>{{ clause.title }}:</strong> {{ clause.summary }}
+          </li>
+        </ul>
       </div>
 
       <!-- Features Section -->
@@ -149,13 +156,12 @@ export default {
       this.error = null
       this.analysisResult = null
     },
-    
     formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes'
       const k = 1024
       const sizes = ['Bytes', 'KB', 'MB', 'GB']
       const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+      return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
     },
     
     async uploadFile() {

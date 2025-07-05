@@ -101,3 +101,8 @@ onMounted(async () => {
   }
 })
 </script>
+
+.container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
