@@ -20,13 +20,13 @@ def generate_jwt_token(user_id, email):
     """Generate a JWT token that Kong can validate"""
     payload = {
         'sub': user_id,  # Subject (user ID)
+        'uuid': user_id,  # Add explicit UUID field
         'email': email,
         'iss': 'auth_service',  # Issuer
         'iat': datetime.datetime.utcnow(),
         'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
     }
     
-    # Include 'kid' in header for Kong
     headers = {
         'kid': 'auth_service'
     }

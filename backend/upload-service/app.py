@@ -4,11 +4,7 @@ import requests
 import os
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    "origins": ["http://localhost:5173"],
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type"]
-}})
+CORS(app)
 
 # Example service URLs (replace with your actual endpoints)
 SCANNER_URL = "SCANNER_URL"
@@ -77,4 +73,4 @@ def upload_and_process_pdf():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9697, debug=True)
+    app.run(host='0.0.0.0', port=5007, debug=True)
