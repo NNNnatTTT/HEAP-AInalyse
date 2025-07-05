@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify
 
 ai_bp = Blueprint('ai', __name__)
 OPENROUTER_KEY   = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/cypher-alpha:free")
 
 @ai_bp.route("/analyse", methods=["POST"])
 def analyse():
