@@ -1,55 +1,25 @@
 openapi: 3.0.3
 info:
-  title: Session Management API
+  title: JSON File Management API
+  description: A REST API for managing JSON files with user authentication via JWT tokens
   version: 1.0.0
-  description: Handles creation, retrieval, and updating of session data stored in Supabase.
-
+  contact:
+    name: API Support
+    email: support@example.com
 servers:
-  - url: http://localhost:9697
-    description: Local development server
-
+  - url: http://localhost:4567
+    description: Development server
+security:
+  - BearerAuth: []
 paths:
-  /add_session/{modsecyear}:
-    get:
-      summary: Create missing weekly sessions for a given modsecyear
-      parameters:
-        - name: modsecyear
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "Y2S1"
-      responses:
-        '200':
-          description: Sessions created or already existed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  new_sessions:
-                    type: array
-                    items:
-                      type: string
-                  existing_sessions:
-                    type: array
-                    items:
-                      type: string
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-
-  /update_active:
+  /upload_json:
     post:
-      summary: Updates the active session for a given modsecyear
+      summary: Upload JSON file
+      description: Stores JSON data directly in the database with filename and description. Commonly used for storing OCR results, document analysis, or structured data.
+      tags:
+        - JSON Files
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -57,22 +27,48 @@ paths:
             schema:
               type: object
               required:
-                - modsecyear
-                - title
-                - active
+                - filename
+                - content
               properties:
-                modsecyear:
+                filename:
                   type: string
-                  example: "Y2S1"
-                title:
+                  description: Name of the JSON file
+                  example: "testdoc"
+                description:
                   type: string
-                  example: "w3"
-                active:
-                  type: boolean
-                  example: true
+                  description: Optional description of the file
+                  example: "a test document"
+                content:
+                  type: object
+                  description: JSON content to be stored (can be OCR results, analysis data, etc.)
+                  example:
+                    message: "OCR successful"
+                    text: "\n--- Page 1 ---\nCOURSE INFORMATION\n\nCourse Code & Title Academic Year /Term\nCS460 Foundations of Cyber-Phy Sys\n\nOffering Unit / School Course Career\nScIS Undergraduate\nCourse Units Grading Basis\nCU: GRD - Graded\n1\n\nCourse Description\n\nCyber-Physical Systems infuse sensing, computing, networking, and control capabilities into physical\nobjects, breathing into them new life, new purpose, and new meaning..."
+            examples:
+              OCR_Document:
+                summary: OCR Document Example
+                description: Example of storing OCR results from a course document
+                value:
+                  filename: "testdoc"
+                  description: "a test document"
+                  content:
+                    message: "OCR successful"
+                    text: "\n--- Page 1 ---\nCOURSE INFORMATION\n\nCourse Code & Title Academic Year /Term\nCS460 Foundations of Cyber-Phy Sys\n\nOffering Unit / School Course Career\nScIS Undergraduate\nCourse Units Grading Basis\nCU: GRD - Graded\n1\n\nCourse Description\n\nCyber-Physical Systems infuse sensing, computing, networking, and control capabilities into physical\nobjects, breathing into them new life, new purpose, and new meaning. They are present in diverse\napplication domains: social services, food, healthcare, transportation, environmental sustainability, and\nmore. Cyber-Physical Systems empower global communities to create meaningful impact by addressing\nsocietal challenges, in areas such as social fabric, quality of life, and sustainability.\n\nIn this foundational course, we embark on an adventure; sometimes challenging, always exciting. We\nlearn vital theories, acquire skills, and work with tools for Cyber-Physical Systems. We discover their\nessential elements. We explore ways to unite the cyber and physical realms. We unleash our creative\nenergies, our youthful idealism, and our capacity to dream, by creating visionary technology to conquer\nareal-world societal challenge.\n\nThe adventure reaches its peak at the project showcase, where we witness the work of human hands\ncome to fruition, leaving us inspired to reflect deeply and broadly about how we, as global citizens, can\n\nharness the power of Cyber-Physical Systems as a potent force in the service of humanity.\n\nStandard Learning Outcomes (for SOA only)\n\nCourse Learning Outcomes\n\nSMU Graduate Learning Outcomes\n\nDiscipline Specific Competencies\n\n--- Page 2 ---\nCourse Area(s)\n\nAREA - Advanced Business Technology Major, AREA - Business Options, AREA - Econ Major Rel/Econ\nOptions, AREA - Grad Req - Dig Tech/Data Ana (Intake 2024 onwards), AREA - 1S Depth Electives, AREA\n- Smart-City Management & Tech Electives, AREA - Social Sciences/PLE Major-related, ENRL - SS\nEnrolment: 11ISEP; 1 SUSEP, RQCP -1S112, RQCP - 1S200/1S111/SMT111/CS101/COR-1IS1704, TRCK -\nCS: Cyber-Physical Systems Track, TRCK - 1S/T4BS: Digitalisation & Cloud Solutions"
+              Simple_Data:
+                summary: Simple JSON Data
+                description: Example of storing simple structured data
+                value:
+                  filename: "config-data"
+                  description: "Application configuration"
+                  content:
+                    status: "active"
+                    settings:
+                      theme: "dark"
+                      notifications: true
+                    data: [1, 2, 3, 4, 5]
       responses:
-        '200':
-          description: Session status updated
+        '201':
+          description: JSON file stored successfully
           content:
             application/json:
               schema:
@@ -80,145 +76,333 @@ paths:
                 properties:
                   message:
                     type: string
+                    example: "JSON file stored successfully"
+                  id:
+                    type: string
+                    format: uuid
+                    example: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+                  filename:
+                    type: string
+                    example: "testdoc"
                   data:
-                    type: array
-                    items:
-                      type: object
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-
-  /get_active:
-    get:
-      summary: Get active session status
-      parameters:
-        - name: session_id
-          in: query
-          required: false
-          schema:
-            type: integer
-        - name: modsecyear
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: title
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Active session(s) retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      type: object
+                    $ref: '#/components/schemas/FileRecord'
+              examples:
+                success_response:
+                  summary: Successful Upload Response
+                  description: Response when OCR document is successfully stored
+                  value:
+                    message: "JSON file stored successfully"
+                    id: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+                    filename: "testdoc"
+                    data:
+                      id: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+                      user_id: "bb37b8a5-4aca-4f8d-a2ba-4f5938418624"
+                      filename: "testdoc"
+                      description: "a test document"
+                      file:
+                        message: "OCR successful"
+                        text: "\n--- Page 1 ---\nCOURSE INFORMATION\n\nCourse Code & Title Academic Year /Term\nCS460 Foundations of Cyber-Phy Sys..."
         '400':
-          description: Missing query parameters
-        '500':
-          description: Server error
-
-  /get_session_id:
-    get:
-      summary: Retrieve session_id for a specific modsecyear and title
-      parameters:
-        - name: modsecyear
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "Y2S1"
-        - name: title
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "w2"
-      responses:
-        '200':
-          description: Session ID found
+          description: Bad request - missing required fields or invalid user
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  session_id:
-                    type: integer
-        '400':
-          description: Missing query parameters
-        '404':
-          description: Session not found
-        '500':
-          description: Server error
-
-  /get_modsecyear:
-    get:
-      summary: Get modsecyear by session_id
-      parameters:
-        - name: session_id
-          in: query
-          required: true
-          schema:
-            type: integer
-            example: 45
-      responses:
-        '200':
-          description: modsecyear found
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  modsecyear:
-                    type: string
-        '400':
-          description: Missing session_id
-        '404':
-          description: Not found
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Server error
-
-  /get_all_title/{modsecyear}:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /files:
     get:
-      summary: Retrieve all session titles and IDs for a modsecyear
-      parameters:
-        - name: modsecyear
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "Y2S1"
+      summary: Get all user files
+      description: Retrieves all JSON files belonging to the authenticated user
+      tags:
+        - JSON Files
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: List of session titles and IDs
+          description: Files retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    title:
-                      type: string
-                    session_id:
-                      type: integer
+                  $ref: '#/components/schemas/FileRecord'
+              examples:
+                files_list:
+                  summary: List of User Files
+                  description: Example response showing multiple files including OCR documents
+                  value:
+                    - id: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+                      user_id: "bb37b8a5-4aca-4f8d-a2ba-4f5938418624"
+                      filename: "testdoc"
+                      description: "a test document"
+                      file:
+                        message: "OCR successful"
+                        text: "--- Page 1 ---\nCOURSE INFORMATION..."
+                    - id: "e84bc574-6510-5bdd-cbe0-8gg3592bfdb1"
+                      user_id: "bb37b8a5-4aca-4f8d-a2ba-4f5938418624"
+                      filename: "analysis-results"
+                      description: "Document analysis output"
+                      file:
+                        status: "completed"
+                        confidence: 0.95
+                        categories: ["academic", "course-info"]
         '400':
-          description: Missing modsecyear
-        '404':
-          description: Not found
+          description: Bad request - unable to identify user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
-          description: Server error
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /file/{fileID}:
+    get:
+      summary: Get specific file
+      description: Retrieves a specific JSON file by its ID
+      tags:
+        - JSON Files
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileID
+          in: path
+          required: true
+          description: UUID of the file to retrieve
+          schema:
+            type: string
+            format: uuid
+            example: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+      responses:
+        '200':
+          description: File retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileRecord'
+              examples:
+                ocr_document:
+                  summary: OCR Document File
+                  description: Example of retrieving an OCR processed document
+                  value:
+                    id: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+                    user_id: "bb37b8a5-4aca-4f8d-a2ba-4f5938418624"
+                    filename: "testdoc"
+                    description: "a test document"
+                    file:
+                      message: "OCR successful"
+                      text: "\n--- Page 1 ---\nCOURSE INFORMATION\n\nCourse Code & Title Academic Year /Term\nCS460 Foundations of Cyber-Phy Sys\n\nOffering Unit / School Course Career\nScIS Undergraduate..."
+        '400':
+          description: Bad request - unable to identify user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Update file
+      description: Updates an existing JSON file's content, filename, or description
+      tags:
+        - JSON Files
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileID
+          in: path
+          required: true
+          description: UUID of the file to update
+          schema:
+            type: string
+            format: uuid
+            example: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                  description: Updated filename
+                  example: "updated-testdoc"
+                description:
+                  type: string
+                  description: Updated description
+                  example: "Updated test document with corrections"
+                file:
+                  type: object
+                  description: Updated JSON content
+                  example:
+                    message: "OCR successful - corrected"
+                    text: "Updated OCR text content..."
+                    corrections: ["Fixed typo on page 1", "Updated course code"]
+      responses:
+        '200':
+          description: File updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "File updated successfully"
+                  data:
+                    $ref: '#/components/schemas/FileRecord'
+        '400':
+          description: Bad request - no data provided or no valid fields to update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete file
+      description: Deletes a specific JSON file by its ID
+      tags:
+        - JSON Files
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fileID
+          in: path
+          required: true
+          description: UUID of the file to delete
+          schema:
+            type: string
+            format: uuid
+            example: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "File deleted successfully"
+        '400':
+          description: Bad request - unable to identify user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from Kong authentication
+  schemas:
+    FileRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the file record
+          example: "d93ab463-5499-4acc-bad9-7ff2481aeab0"
+        user_id:
+          type: string
+          format: uuid
+          description: UUID of the user who owns the file
+          example: "bb37b8a5-4aca-4f8d-a2ba-4f5938418624"
+        filename:
+          type: string
+          description: Name of the JSON file
+          example: "testdoc"
+        file:
+          type: object
+          description: JSON content stored in the file (can be OCR results, analysis data, etc.)
+          example:
+            message: "OCR successful"
+            text: "\n--- Page 1 ---\nCOURSE INFORMATION\n\nCourse Code & Title Academic Year /Term\nCS460 Foundations of Cyber-Phy Sys\n\nOffering Unit / School Course Career\nScIS Undergraduate\nCourse Units Grading Basis\nCU: GRD - Graded\n1\n\nCourse Description\n\nCyber-Physical Systems infuse sensing, computing, networking, and control capabilities into physical\nobjects, breathing into them new life, new purpose, and new meaning..."
+        description:
+          type: string
+          description: Description of the file
+          example: "a test document"
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Missing filename or content"
+tags:
+  - name: JSON Files
+    description: Operations for managing JSON files stored in the database. Commonly used for OCR results, document analysis, and structured data storage.
