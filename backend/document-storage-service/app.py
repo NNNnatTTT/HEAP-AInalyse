@@ -3,7 +3,7 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from supabase import create_client, Client
-import jwt  # PyJWT
+import jwt
 from datetime import datetime
 
 app = Flask(__name__)
@@ -14,13 +14,28 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# JWT secret and algorithm (from Kong config)
-JWT_SECRET = "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"
-JWT_ALGORITHM = "HS256"
+def get_current_user():
+    """Extract user UUID from JWT (Kong already validated it)"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    
+    token = auth_header.split(' ')[1]
+    try:
+        # Skip signature verification since Kong already validated
+        payload = jwt.decode(token, options={"verify_signature": False})
+        return payload.get('uuid') or payload.get('sub')
+    except:
+        return None
 
 @app.route('/upload_json', methods=['POST'])
 def upload_json():
     try:
+        # Get user ID (Kong ensures valid JWT)
+        user_uuid = get_current_user()
+        if not user_uuid:
+            return jsonify({"error": "Unable to identify user"}), 400
+
         # Parse JSON body
         data = request.get_json()
         if not data:
@@ -33,29 +48,8 @@ def upload_json():
         if not filename or not file_content:
             return jsonify({"error": "Missing filename or content"}), 400
 
-        # ---------------------------------------------------------------------
-
-        # Extract JWT from Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Missing or invalid Authorization header"}), 401
-        token = auth_header.split(' ')[1]
-
-        try:
-            # Decode JWT using Kong's secret and algorithm
-            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-            # Adjust this line if your UUID is stored under a different claim:
-            user_uuid = payload.get('uuid') or payload.get('sub')
-        except Exception as e:
-            return jsonify({"error": f"Invalid JWT: {str(e)}"}), 401
-
-        if not user_uuid:
-            return jsonify({"error": "UUID not found in token"}), 400
-
-        # ---------------------------------------------------------------------
-
         # Store JSON as file in Supabase Storage
-        storage_path = f"{filename}.json"
+        storage_path = f"{user_uuid}/{filename}.json"  # User-specific path
         file_bytes = json.dumps(file_content, ensure_ascii=False, indent=2).encode('utf-8')
 
         storage_response = supabase.storage.from_('files').upload(
@@ -72,7 +66,7 @@ def upload_json():
 
         public_url = supabase.storage.from_('files').get_public_url(storage_path)
 
-        # Store metadata in Supabase database (table: files)
+        # Store metadata in Supabase database
         file_metadata = {
             "filename": filename,
             "description": description,
@@ -82,12 +76,8 @@ def upload_json():
             "uploaded_at": datetime.utcnow().isoformat(),
             "active": True
         }
-        db_response = (
-            supabase
-            .from_('files')
-            .insert(file_metadata)
-            .execute()
-        )
+        
+        db_response = supabase.from_('files').insert(file_metadata).execute()
 
         return jsonify({
             "message": "JSON file uploaded successfully",
@@ -100,23 +90,11 @@ def upload_json():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Get
 @app.route('/file/<fileID>', methods=['GET'])
 def get_file(fileID):
-    # Extract JWT from Authorization header
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({"error": "Missing or invalid Authorization header"}), 401
-    token = auth_header.split(' ')[1]
-    try:
-        # Decode JWT using Kong's secret and algorithm
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        # Adjust this line if your UUID is stored under a different claim:
-        user_uuid = payload.get('uuid') or payload.get('sub')
-    except Exception as e:
-        return jsonify({"error": f"Invalid JWT: {str(e)}"}), 401
+    user_uuid = get_current_user()
     if not user_uuid:
-        return jsonify({"error": "UUID not found in token"}), 400
+        return jsonify({"error": "Unable to identify user"}), 400
 
     try:
         response = (
@@ -128,8 +106,10 @@ def get_file(fileID):
             .single()
             .execute()
         )
+        
         if response.data is None:
             return jsonify({"error": "File not found"}), 404
+            
         return jsonify(response.data), 200
 
     except Exception as e:
@@ -137,20 +117,9 @@ def get_file(fileID):
 
 @app.route('/files', methods=['GET'])
 def get_all_files():
-    # Extract JWT from Authorization header
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({"error": "Missing or invalid Authorization header"}), 401
-    token = auth_header.split(' ')[1]
-    try:
-        # Decode JWT using Kong's secret and algorithm
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        # Adjust this line if your UUID is stored under a different claim:
-        user_uuid = payload.get('uuid') or payload.get('sub')
-    except Exception as e:
-        return jsonify({"error": f"Invalid JWT: {str(e)}"}), 401
+    user_uuid = get_current_user()
     if not user_uuid:
-        return jsonify({"error": "UUID not found in token"}), 400
+        return jsonify({"error": "Unable to identify user"}), 400
 
     try:
         response = (
@@ -168,23 +137,12 @@ def get_all_files():
 
 @app.route('/file/<fileID>', methods=['DELETE'])
 def delete_file(fileID):
-    # Extract JWT from Authorization header
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({"error": "Missing or invalid Authorization header"}), 401
-    token = auth_header.split(' ')[1]
-    try:
-        # Decode JWT using Kong's secret and algorithm
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        # Adjust this line if your UUID is stored under a different claim:
-        user_uuid = payload.get('uuid') or payload.get('sub')
-    except Exception as e:
-        return jsonify({"error": f"Invalid JWT: {str(e)}"}), 401
+    user_uuid = get_current_user()
     if not user_uuid:
-        return jsonify({"error": "UUID not found in token"}), 400
+        return jsonify({"error": "Unable to identify user"}), 400
 
     try:
-        # Get file to check if it exists 
+        # Get file to check ownership
         response = (
             supabase
             .from_('files')
@@ -194,19 +152,19 @@ def delete_file(fileID):
             .single()
             .execute()
         )
+        
         if response.data is None:
             return jsonify({"error": "File not found"}), 404
 
-        # Delete from DB
-        fileRecord = response.data
-        supabase.storage.from_('files').remove(fileRecord['file_path'])
-
-        # Delete metadata to free space
+        # Delete from storage and database
+        file_record = response.data
+        supabase.storage.from_('files').remove([file_record['file_path']])
         supabase.from_('files').delete().eq('id', fileID).execute()
 
         return jsonify({"message": "File deleted successfully"}), 200
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=4567, debug=True)
+    app.run(host='0.0.0.0', port=5007, debug=True)  # Use port from Kong config
