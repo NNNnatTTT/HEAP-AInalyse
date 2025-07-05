@@ -121,12 +121,7 @@ export default {
   methods: {
     startAnalyzing() {
       // Navigate to contract analysis page
-      this.$router.push('/home')
-    },
-    
-    startTrial() {
-      // Navigate to signup/trial page
-      this.$router.push('/signup')
+      this.$router.push('/login')
     },
   },
   components: {

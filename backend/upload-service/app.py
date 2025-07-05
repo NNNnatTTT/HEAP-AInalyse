@@ -62,5 +62,19 @@ def upload_and_process_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    
+    
+# This for dashboard actually, unless want to show recent docs list
+# @app.route('/upload-service/get-all', methods=['GET'])
+# def get_all_documents():
+
+# @app.route('/upload-service/<document_id>', methods=['GET'])
+# def get_document(document_id):
+
+# def delete_document(document_id):
+
+# def update_document(document_id):
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9697, debug=True)
