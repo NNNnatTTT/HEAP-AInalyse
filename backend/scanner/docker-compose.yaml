@@ -1,10 +1,10 @@
 services:
-  session:
+  scanner:
     build:
       context: .
       dockerfile: Dockerfile
-    image: yiluan2023/session:1.0
-    container_name: session
+    image: yiluan2023/scanner:1.0
+    container_name: scanner
     ports:
       - "9697:9697"
     environment:

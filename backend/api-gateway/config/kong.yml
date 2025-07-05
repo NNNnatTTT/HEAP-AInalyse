@@ -2,7 +2,6 @@ _format_version: "3.0"
 _transform: true
 
 services:
-
   - name: auth-service
     url: http://auth:5001
     routes:
@@ -26,13 +25,7 @@ services:
         paths:
           - /cpr
         strip_path: true
-  # - name: cpr-composite-service
-  #   url: http://cpr-composite:9998
-  #   routes:
-  #     - name: cpr-composite-route
-  #       paths:
-  #         - /cpr-composite
-  #       strip_path: true
+
   - name: transcript-service
     url: http://transcript:9997
     routes:
@@ -100,7 +93,6 @@ services:
           - http
           - https
 
-
 plugins:
   - name: cors
     config:
@@ -140,15 +132,21 @@ plugins:
     config:
       add:
         headers:
-          - "Connection: Upgrade"  # Correct format for header
-          - "Upgrade: websocket"   # Correct format for headers
+          - "Connection: Upgrade"
+          - "Upgrade: websocket"
 
+  # JWT plugins for protected services
   - name: jwt
     config:
       secret_is_base64: false
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: analytics-service
     enabled: true
 
@@ -158,6 +156,11 @@ plugins:
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: classpartrecording-service
     enabled: true
 
@@ -167,6 +170,11 @@ plugins:
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: classroom-service
     enabled: true
 
@@ -176,6 +184,11 @@ plugins:
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: session-service
     enabled: true
 
@@ -185,6 +198,11 @@ plugins:
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: transcribe-service
     enabled: true
 
@@ -194,6 +212,11 @@ plugins:
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: smartquiz-service
     enabled: true
 
@@ -203,12 +226,17 @@ plugins:
       key_claim_name: kid
       claims_to_verify:
         - exp
+        - sub
+      header_names:
+        - authorization
+      uri_param_names: []
+      cookie_names: []
     service: reflection-service
     enabled: true
 
 consumers:
   - username: login_server_issuer
     jwt_secrets:
-      - key: "auth_service"  # This is the 'kid' that will be in the JWT header
+      - key: "auth_service"
         algorithm: HS256
         secret: "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"

@@ -1,224 +1,150 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from supabase import create_client, Client
 import os
-import requests
-
+import jwt
+import datetime
+from supabase import create_client, Client
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    "origins": ["http://localhost:5173"],
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type"]
-}})
+CORS(app)
+
 # Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# JWT secret for Kong (should match Kong configuration)
+JWT_SECRET = "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"
 
-
-
-@app.route('/add_session/<modsecyear>', methods=['GET'])
-def add_session(modsecyear):
-    try:
-        # Check which sessions already exist
-        existing_sessions = []
-        for i in range(1, 13):
-            title = f"w{i}"
-            response = (
-                supabase
-                .from_('session')
-                .select('*')
-                .match({'modsecyear': modsecyear, 'title': title})
-                .execute()
-            )
-            if response.data:
-                existing_sessions.append(title)
-        
-        if len(existing_sessions) == 12:
-            return jsonify({"message": "All session records already exist"}), 200
-        
-        # Create records for sessions that don't exist
-        new_sessions = []
-        for i in range(1, 13):
-            title = f"w{i}"
-            if title not in existing_sessions:
-                new_sessions.append({
-                    "modsecyear": modsecyear, 
-                    "title": title, 
-                    "active": False
-                })
-        
-        # Insert new sessions into Supabase
-        if new_sessions:
-            response = (
-                supabase
-                .from_('session')
-                .insert(new_sessions)
-                .execute()
-            )
-            return jsonify({
-                "message": f"Added {len(new_sessions)} new sessions. {len(existing_sessions)} sessions already existed.",
-                "new_sessions": [s['title'] for s in new_sessions],
-                "existing_sessions": existing_sessions,
-                "data": response.data
-            })
-        else:
-            return jsonify({"message": "All sessions already exist", "existing_sessions": existing_sessions})
-            
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/update_active', methods=['POST'])
-def update_active():
-    try:
-        data = request.json
-        modsecyear = data.get("modsecyear")
-        title = data.get("title")
-        active = data.get("active")
-        if(active):
-            res = (
-            supabase
-            .from_('session')
-            .update({"active": False})
-            .match({"modsecyear": modsecyear})
-            .execute()
-        )  
-            
-
-        if modsecyear is None or title is None or active is None:
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Update Supabase record
-        response = (
-            supabase
-            .from_('session')
-            .update({"active": active})
-            .match({"modsecyear": modsecyear, "title": title})
-            .execute()
-        )
-
-
-        return jsonify({"message": "Update successful", "data": response.data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/get_active', methods=['GET'])
-def get_active():
-    try:
-        session_id = request.args.get("session_id")
-        modsecyear = request.args.get("modsecyear")
-        title = request.args.get("title")
-
-        if session_id:
-            response = (
-                supabase
-                .from_('session')
-                .select("active")
-                .eq("session_id", session_id)
-                .execute()
-            )
-        elif modsecyear and title:
-            response = (
-                supabase
-                .from_('session')
-                .select("active")
-                .match({"modsecyear": modsecyear, "title": title})
-                .execute()
-            )
-
-        elif modsecyear:
-            response = (
-                supabase
-                .from_('session')
-                .select("session_id","title")
-                .match({"modsecyear": modsecyear})
-                .is_("active", True)
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        return jsonify({"message": "Query successful", "data": response.data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/get_session_id', methods=['GET'])
-def get_session_id():
-    try:
-        modsecyear = request.args.get("modsecyear")
-        title = request.args.get("title")
-
-        if modsecyear and title:
-            response = (
-                supabase
-                .from_('session')
-                .select("session_id")
-                .match({"modsecyear": modsecyear, "title": title})
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        # Check if data exists and return the first element, else return an error
-        if response.data:
-            return jsonify(response.data[0]), 200
-        else:
-            return jsonify({"error": "No matching session found"}), 404
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+def generate_jwt_token(user_id, email):
+    """Generate a JWT token that Kong can validate"""
+    payload = {
+        'sub': user_id,  # Subject (user ID)
+        'email': email,
+        'iss': 'auth_service',  # Issuer
+        'iat': datetime.datetime.utcnow(),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    }
     
-@app.route('/get_modsecyear', methods=['GET'])
-def get_modsecyear():
+    # Include 'kid' in header for Kong
+    headers = {
+        'kid': 'auth_service'
+    }
+    
+    return jwt.encode(payload, JWT_SECRET, algorithm='HS256', headers=headers)
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    email = request.json.get('Email')
+    password = request.json.get('Password')
+
+    if not email or not password:
+        return jsonify({"msg": "Missing email or password"}), 400
+
     try:
-        session_id= request.args.get("session_id")
-
-        if session_id:
-            response = (
-                supabase
-                .from_('session')
-                .select("modsecyear")
-                .match({"session_id": session_id})
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        # Check if data exists and return the first element, else return an error
-        if response.data:
-            return jsonify(response.data[0]), 200
-        else:
-            return jsonify({"error": "No matching modsecyear found"}), 404
-
+        # Create user in Supabase Auth
+        result = supabase.auth.sign_up({"email": email, "password": password})
+        
+        # Handle different response formats
+        if hasattr(result, 'model_dump'):
+            data = result.model_dump()
+            if data.get("error"):
+                return jsonify({"msg": data["error"]["message"]}), 400
+        elif isinstance(result, dict):
+            if result.get("error"):
+                return jsonify({"msg": result["error"]["message"]}), 400
+        elif hasattr(result, 'error') and result.error:
+            return jsonify({"msg": result.error.message}), 400
+            
+        return jsonify({"message": "Signup successful. Please check your email to verify your account."}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"msg": f"Error during signup: {str(e)}"}), 500
 
-@app.route('/get_all_title/<modsecyear>', methods=['GET'])
-def get_all_title(modsecyear):
+@app.route('/login', methods=['POST'])
+def login():
+    email = request.json.get('Email')
+    password = request.json.get('Password')
+
+    if not email or not password:
+        return jsonify({"msg": "Missing email or password"}), 400
+
     try:
-
-        if modsecyear:
-            response = (
-                supabase
-                .from_('session')
-                .select("title","session_id")
-                .match({"modsecyear": modsecyear})
-                .execute()
-            )
+        # Authenticate user with Supabase Auth
+        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        
+        # Handle different response formats and extract user info
+        user_id = None
+        user_email = None
+        
+        if hasattr(result, 'model_dump'):
+            data = result.model_dump()
+            if data.get("error"):
+                return jsonify({"msg": data["error"]["message"]}), 401
+            user = data.get("user")
+            if user:
+                user_id = user.get('id')
+                user_email = user.get('email')
+        elif isinstance(result, dict):
+            if result.get("error"):
+                return jsonify({"msg": result["error"]["message"]}), 401
+            user = result.get("user")
+            if user:
+                user_id = user.get('id')
+                user_email = user.get('email')
         else:
-            return jsonify({"error": "Missing required query parameters"}), 400
+            # Object with attributes
+            if hasattr(result, 'error') and result.error:
+                return jsonify({"msg": result.error.message}), 401
+            user = getattr(result, 'user', None)
+            if user:
+                user_id = getattr(user, 'id', None)
+                user_email = getattr(user, 'email', None)
 
-        # Check if data exists and return the first element, else return an error
-        data = response.data
-        if response:
-            return jsonify(data), 200
-        else:
-            return jsonify({"error": "No matching modsecyear found"}), 404
+        if not user_id or not user_email:
+            return jsonify({"msg": "Invalid login response"}), 401
+
+        # Generate custom JWT token for Kong
+        custom_token = generate_jwt_token(user_id, user_email)
+
+        return jsonify({
+            "access_token": custom_token,
+            "user": {
+                "id": user_id,
+                "email": user_email
+            }
+        }), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"msg": f"Error during login: {str(e)}"}), 500
+
+@app.route('/verify', methods=['GET'])
+def verify_token():
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({"msg": "Missing or invalid Authorization header"}), 401
+    
+    token = auth_header.split(' ')[1]
+
+    try:
+        # Verify the custom JWT token
+        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+        
+        # Extract user info from token
+        user_id = payload.get('sub')
+        user_email = payload.get('email')
+        
+        return jsonify({
+            "message": "Token is valid.",
+            "user": {
+                "id": user_id,
+                "email": user_email
+            }
+        }), 200
+    except jwt.ExpiredSignatureError:
+        return jsonify({"msg": "Token has expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"msg": "Invalid token"}), 401
+    except Exception as e:
+        return jsonify({"msg": f"Error during token verification: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9697,debug=True)
+    app.run(debug=True, host="0.0.0.0", port=5001)
