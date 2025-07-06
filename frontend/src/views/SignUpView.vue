@@ -16,6 +16,34 @@
       
       <div class="bg-white shadow-xl rounded-lg p-8">
         <form @submit.prevent="handleSubmit" class="space-y-6">
+          <!-- Success Message -->
+<div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="ml-3">
+      <p class="text-sm text-green-800">{{ successMessage }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Error Message -->
+<div v-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="ml-3">
+      <p class="text-sm text-red-800">{{ error }}</p>
+    </div>
+  </div>
+</div>
+
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">
@@ -244,33 +272,59 @@ export default {
       this.successMessage = null
       
       try {
-        // Match the auth service expected format
-        const response = await authService.register({
-          Email: this.form.email,  // Capital 'E' to match Flask service
-          Password: this.form.password  // Capital 'P' to match Flask service
+        // Step 1: Register the user
+        const signupResponse = await authService.register({
+          Email: this.form.email,
+          Password: this.form.password
         })
         
-        // Handle successful signup
-        this.successMessage = response.data.message || 'Signup successful! Please check your email to verify your account.'
+        // Show initial success message
+        this.successMessage = 'Account created successfully! Logging you in...'
         
-        // Clear the form
-        this.form = {
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          acceptTerms: false
+        // Step 2: Automatically log the user in
+        try {
+          const loginResponse = await authService.login({
+            Email: this.form.email,
+            Password: this.form.password
+          })
+          
+          // Store JWT token and user info
+          localStorage.setItem('jwt_token', loginResponse.data.access_token)
+          
+          if (loginResponse.data.user) {
+            localStorage.setItem('user_info', JSON.stringify(loginResponse.data.user))
+          }
+          
+          // Update success message
+          this.successMessage = 'Welcome! Redirecting to your dashboard...'
+          
+          // Clear the form
+          this.form = {
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            acceptTerms: false
+          }
+          
+          // Redirect to home page after a short delay
+          setTimeout(() => {
+            this.$router.push('/home')
+          }, 1500)
+          
+        } catch (loginError) {
+          console.error('Auto-login failed:', loginError)
+          // If auto-login fails, redirect to login page
+          this.successMessage = 'Account created! Please sign in to continue.'
+          setTimeout(() => {
+            this.$router.push('/login')
+          }, 2000)
         }
         
-        // Optional: Redirect to login page after a delay
-        setTimeout(() => {
-          this.$router.push('/login')
-        }, 3000)
-        
-      } catch (error) {
-        console.error('Registration error:', error)
-        this.error = error.response?.data?.msg || 'Registration failed. Please try again.'
+      } catch (signupError) {
+        console.error('Registration error:', signupError)
+        this.error = signupError.response?.data?.msg || 'Registration failed. Please try again.'
       } finally {
         this.loading = false
       }
@@ -278,3 +332,4 @@ export default {
   }
 }
 </script>
+

@@ -6,6 +6,20 @@
     </div>
 
     <div class="mb-12">
+      <!-- Error Message Display -->
+<div v-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+  <div class="flex">
+    <div class="flex-shrink-0">
+      <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+      </svg>
+    </div>
+    <div class="ml-3">
+      <p class="text-sm text-red-800">{{ error }}</p>
+    </div>
+  </div>
+</div>
+  
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <!-- First Contract Uploader -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -166,8 +180,7 @@
 </template>
 
 <script>
-import { scanDocument } from '@/api/scanner';                // ← scanner first
-import { sendComparePrompt } from '@/api/compact-compare-api'; // ← then your compare/prompt API
+import { uploadService, compareService } from '@/services'
 
 export default {
   name: 'CompareView',
@@ -175,47 +188,101 @@ export default {
     return {
       contractA: null,
       contractB: null,
+      dragOverA: false,
+      dragOverB: false,
       isComparing: false,
-      comparisonResults: null
-    };
+      comparisonResults: null,
+      error: null
+    }
   },
   methods: {
-    // … your drag/drop handlers untouched …
+    handleFileSelect(event, contract) {
+      const file = event.target.files[0]
+      if (file) {
+        this.validateAndSetFile(file, contract)
+      }
+    },
+
+    handleDrop(event, contract) {
+      event.preventDefault()
+      this[`dragOver${contract}`] = false
+      
+      const file = event.dataTransfer.files[0]
+      if (file) {
+        this.validateAndSetFile(file, contract)
+      }
+    },
+
+    validateAndSetFile(file, contract) {
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword']
+      if (!allowedTypes.includes(file.type)) {
+        this.error = 'Please upload a valid document format (PDF, DOCX, DOC)'
+        return
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        this.error = 'File size must be less than 10MB'
+        return
+      }
+
+      this[`contract${contract}`] = file
+      this.error = null
+    },
+
+    removeFile(contract) {
+      this[`contract${contract}`] = null
+      this.comparisonResults = null
+      this.error = null
+    },
+
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes'
+      const k = 1024
+      const sizes = ['Bytes', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    },
 
     async compareContracts() {
-      if (!this.contractA || !this.contractB) return;
-      this.isComparing = true;
-      this.comparisonResults = null;
+      if (!this.contractA || !this.contractB) return
+      
+      this.isComparing = true
+      this.comparisonResults = null
+      this.error = null
 
       try {
-        const form = new FormData();
-        form.append('fileA', this.contractA);
-        form.append('fileB', this.contractB);
+        // Create FormData with both contracts
+        const formData = new FormData()
+        formData.append('contractA', this.contractA)
+        formData.append('contractB', this.contractB)
+        formData.append('contractAName', this.contractA.name)
+        formData.append('contractBName', this.contractB.name)
 
-        const resp = await fetch('http://localhost:3000/api/compare', {
-          method: 'POST',
-          body: form
-        });
-        if (!resp.ok) throw new Error(await resp.text());
-        this.comparisonResults = await resp.json();
-      } catch (err) {
-        alert('Comparison failed: ' + err.message);
+        // Call compare service through Kong gateway
+        const comparisonResponse = await compareService.compareContracts(formData)
+        this.comparisonResults = comparisonResponse.data
+
+      } catch (error) {
+        console.error('Comparison error:', error)
+        this.error = error.response?.data?.error || error.response?.data?.msg || 'Comparison failed. Please try again.'
       } finally {
-        this.isComparing = false;
+        this.isComparing = false
       }
+    },
+
+    getContractA() {
+      return this.comparisonResults?.contractA?.content || 
+             this.comparisonResults?.analysis?.contractA || 
+             'Contract A content will appear here after comparison'
+    },
+
+    getContractB() {
+      return this.comparisonResults?.contractB?.content || 
+             this.comparisonResults?.analysis?.contractB || 
+             'Contract B content will appear here after comparison'
     }
-
   }
-};
+}
 </script>
-
-
-<style scoped>
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-.spinner {
-  animation: spin 1s linear infinite;
-}
-</style>

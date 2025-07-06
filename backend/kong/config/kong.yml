@@ -2,13 +2,13 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  # - name: auth-service
-  #   url: http://auth:5001
-  #   routes:
-  #     - name: auth-route
-  #       paths:
-  #         - /auth
-  #       strip_path: true
+  - name: auth-service
+    url: http://auth:5001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
 
   # - name: open-router-wrapper-service
   #   url: http://open-router-wrapper:5002
@@ -66,6 +66,14 @@ services:
   #         - /analyse
   #       strip_path: true
 
+  # - name: compare-service
+  #   url: http://compare-service:5010
+  #   routes:
+  #     - name: compare-route
+  #       paths:
+  #         - /compare
+  #       strip_path: true
+
   - name: ai-model
     url: http://ai-model:5020
     routes:
@@ -73,7 +81,6 @@ services:
         paths: 
           - /analyse
         strip_path: false
-
 
 plugins:
   - name: cors
@@ -185,6 +192,19 @@ plugins:
 
   # - name: jwt
   #   service: analyse-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: compare-service
   #   config:
   #     secret_is_base64: false
   #     key_claim_name: kid

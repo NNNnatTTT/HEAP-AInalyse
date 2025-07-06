@@ -1,55 +1,21 @@
 openapi: 3.0.3
 info:
-  title: Session Management API
+  title: AI Analysis Service
+  description: A generic AI analysis service that processes document pages using custom prompts via OpenRouter API
   version: 1.0.0
-  description: Handles creation, retrieval, and updating of session data stored in Supabase.
-
+  contact:
+    name: API Support
+    email: support@example.com
 servers:
-  - url: http://localhost:9697
-    description: Local development server
-
+  - url: http://localhost:5020
+    description: Development server
 paths:
-  /add_session/{modsecyear}:
-    get:
-      summary: Create missing weekly sessions for a given modsecyear
-      parameters:
-        - name: modsecyear
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "Y2S1"
-      responses:
-        '200':
-          description: Sessions created or already existed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  new_sessions:
-                    type: array
-                    items:
-                      type: string
-                  existing_sessions:
-                    type: array
-                    items:
-                      type: string
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-
-  /update_active:
+  /analyse:
     post:
-      summary: Updates the active session for a given modsecyear
+      summary: Analyze document pages with custom prompt
+      description: Processes multiple document pages using a custom AI prompt. This service is designed to be reusable across different use cases by accepting any prompt from the calling service.
+      tags:
+        - AI Analysis
       requestBody:
         required: true
         content:
@@ -57,35 +23,151 @@ paths:
             schema:
               type: object
               required:
-                - modsecyear
-                - title
-                - active
+                - prompt
+                - pages
               properties:
-                modsecyear:
+                prompt:
                   type: string
-                  example: "Y2S1"
-                title:
-                  type: string
-                  example: "w3"
-                active:
-                  type: boolean
-                  example: true
+                  description: Custom system prompt that defines the AI's role and analysis approach
+                  example: "You are a contract analysis assistant. Identify suspicious clauses, key obligations, and potential risks."
+                pages:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of document page contents to be analyzed
+                  example: 
+                    - "--- Page 1 ---\nCONTRACT AGREEMENT\n\nThis agreement is entered into between..."
+                    - "--- Page 2 ---\nTERMS AND CONDITIONS\n\n1. Payment terms: Net 30 days..."
+                    - "--- Page 3 ---\nLIABILITY CLAUSES\n\nThe contractor shall be liable for..."
+            examples:
+              contract_analysis:
+                summary: Contract Analysis
+                description: Example for analyzing contract documents
+                value:
+                  prompt: "You are a contract analysis assistant. Identify suspicious clauses, key obligations, and potential risks."
+                  pages:
+                    - "CONTRACT AGREEMENT\n\nThis agreement is entered into between Company A and Company B for the provision of consulting services..."
+                    - "PAYMENT TERMS\n\nPayment shall be made within 30 days of invoice receipt. Late payments will incur a 2% monthly penalty..."
+              document_summary:
+                summary: Document Summarization
+                description: Example for summarizing documents
+                value:
+                  prompt: "You are a document summarization assistant. Create a concise summary of the key points and main topics."
+                  pages:
+                    - "QUARTERLY REPORT\n\nThis quarter has shown significant growth in our technology sector..."
+                    - "FINANCIAL HIGHLIGHTS\n\nRevenue increased by 15% compared to last quarter..."
+              ocr_correction:
+                summary: OCR Text Correction
+                description: Example for correcting OCR errors
+                value:
+                  prompt: "You are an OCR correction assistant. Fix any OCR errors, improve text formatting, and ensure readability."
+                  pages:
+                    - "C0URSE INF0RMATI0N\n\nC0urse C0de & Title Academic Year /Term\nCS460 F0undati0ns 0f Cyber-Phy Sys..."
+              risk_assessment:
+                summary: Risk Assessment
+                description: Example for legal risk assessment
+                value:
+                  prompt: "You are a legal risk assessment assistant. Evaluate any financial or compliance risks in this document."
+                  pages:
+                    - "COMPLIANCE REQUIREMENTS\n\nAll parties must adhere to local regulations and industry standards..."
       responses:
         '200':
-          description: Session status updated
+          description: Analysis completed successfully
           content:
             application/json:
               schema:
                 type: object
+                description: OpenRouter API response containing the AI analysis
                 properties:
-                  message:
+                  id:
                     type: string
-                  data:
+                    description: Unique identifier for the completion
+                    example: "chatcmpl-123456789"
+                  object:
+                    type: string
+                    description: Object type
+                    example: "chat.completion"
+                  created:
+                    type: integer
+                    description: Unix timestamp of creation
+                    example: 1704067200
+                  model:
+                    type: string
+                    description: Model used for the completion
+                    example: "openrouter/cypher-alpha:free"
+                  choices:
                     type: array
                     items:
                       type: object
-        '500':
-          description: Server error
+                      properties:
+                        index:
+                          type: integer
+                          example: 0
+                        message:
+                          type: object
+                          properties:
+                            role:
+                              type: string
+                              example: "assistant"
+                            content:
+                              type: string
+                              description: AI analysis result
+                              example: "Based on my analysis of the contract, I've identified several key areas of concern:\n\n1. **Suspicious Clauses:**\n   - Unlimited liability clause in section 3.2\n   - Automatic renewal without notice period\n\n2. **Key Obligations:**\n   - Monthly reporting requirements\n   - Compliance with industry standards\n\n3. **Potential Risks:**\n   - Financial exposure due to unlimited liability\n   - Difficulty terminating due to auto-renewal terms"
+                        finish_reason:
+                          type: string
+                          example: "stop"
+                  usage:
+                    type: object
+                    properties:
+                      prompt_tokens:
+                        type: integer
+                        example: 150
+                      completion_tokens:
+                        type: integer
+                        example: 200
+                      total_tokens:
+                        type: integer
+                        example: 350
+              examples:
+                contract_analysis_response:
+                  summary: Contract Analysis Response
+                  description: Example response for contract analysis
+                  value:
+                    id: "chatcmpl-abc123"
+                    object: "chat.completion"
+                    created: 1704067200
+                    model: "openrouter/cypher-alpha:free"
+                    choices:
+                      - index: 0
+                        message:
+                          role: "assistant"
+                          content: "Based on my analysis of the contract, I've identified several key areas:\n\n**Suspicious Clauses:**\n- Unlimited liability clause in section 3.2\n- Vague termination conditions\n\n**Key Obligations:**\n- Monthly deliverable requirements\n- Compliance reporting\n\n**Potential Risks:**\n- Financial exposure\n- Operational constraints"
+                        finish_reason: "stop"
+                    usage:
+                      prompt_tokens: 180
+                      completion_tokens: 120
+                      total_tokens: 300
+        '400':
+          description: Bad request - missing or invalid required fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing_prompt:
+                  summary: Missing Prompt
+                  value:
+                    error: "Missing or invalid 'prompt' field"
+                missing_pages:
+                  summary: Missing Pages
+                  value:
+                    error: "Missing or invalid 'pages' field"
+                invalid_pages:
+                  summary: Invalid Pages Format
+                  value:
+                    error: "Missing or invalid 'pages' field"
+        '502':
+          description: Bad gateway - AI service request failed
           content:
             application/json:
               schema:
@@ -93,132 +175,59 @@ paths:
                 properties:
                   error:
                     type: string
-
-  /get_active:
-    get:
-      summary: Get active session status
-      parameters:
-        - name: session_id
-          in: query
-          required: false
-          schema:
-            type: integer
-        - name: modsecyear
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: title
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Active session(s) retrieved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      type: object
-        '400':
-          description: Missing query parameters
-        '500':
-          description: Server error
-
-  /get_session_id:
-    get:
-      summary: Retrieve session_id for a specific modsecyear and title
-      parameters:
-        - name: modsecyear
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "Y2S1"
-        - name: title
-          in: query
-          required: true
-          schema:
-            type: string
-            example: "w2"
-      responses:
-        '200':
-          description: Session ID found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  session_id:
+                    example: "AI request failed"
+                  status:
                     type: integer
-        '400':
-          description: Missing query parameters
-        '404':
-          description: Session not found
-        '500':
-          description: Server error
-
-  /get_modsecyear:
+                    description: HTTP status code from OpenRouter API
+                    example: 429
+                  details:
+                    type: string
+                    description: Error details from OpenRouter API
+                    example: "Rate limit exceeded"
+              examples:
+                rate_limit:
+                  summary: Rate Limit Exceeded
+                  value:
+                    error: "AI request failed"
+                    status: 429
+                    details: "Rate limit exceeded"
+                api_error:
+                  summary: API Error
+                  value:
+                    error: "AI request failed"
+                    status: 500
+                    details: "Internal server error"
+  /health:
     get:
-      summary: Get modsecyear by session_id
-      parameters:
-        - name: session_id
-          in: query
-          required: true
-          schema:
-            type: integer
-            example: 45
+      summary: Health check
+      description: Returns the health status of the AI analysis service
+      tags:
+        - Health
       responses:
         '200':
-          description: modsecyear found
+          description: Service is healthy
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  modsecyear:
+                  status:
                     type: string
-        '400':
-          description: Missing session_id
-        '404':
-          description: Not found
-        '500':
-          description: Server error
-
-  /get_all_title/{modsecyear}:
-    get:
-      summary: Retrieve all session titles and IDs for a modsecyear
-      parameters:
-        - name: modsecyear
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "Y2S1"
-      responses:
-        '200':
-          description: List of session titles and IDs
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    title:
-                      type: string
-                    session_id:
-                      type: integer
-        '400':
-          description: Missing modsecyear
-        '404':
-          description: Not found
-        '500':
-          description: Server error
+                    example: "healthy"
+                  service:
+                    type: string
+                    example: "ai-analysis"
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Missing or invalid 'prompt' field"
+tags:
+  - name: AI Analysis
+    description: Operations for analyzing documents using custom AI prompts
+  - name: Health
+    description: Service health monitoring

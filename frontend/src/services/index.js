@@ -1,5 +1,3 @@
-
-// Authentication service
 import api from './api'
 
 // Authentication service - updated to match Flask auth service
@@ -15,46 +13,58 @@ export const authService = {
   }
 }
 
-
-// Upload service
+// Upload service - corrected endpoint path
 export const uploadService = {
   uploadContract: (formData) => api.post('/upload-service', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
 
-// // Analysis service
-// export const analysisService = {
-//   analyzeContract: (contractId) => api.post('/analyse', { contractId }),
-//   getAnalysisResult: (analysisId) => api.get(`/analyse/${analysisId}`)
-// }
-
+// Analysis service - using AI model endpoint
 export const analysisService = {
   analyzeContract: (pages, promptKey, prompt) =>
-    api.post('/analyse', { pages, promptKey, prompt })
+    api.post('/analyse', { pages, promptKey, prompt }),
+  compareContracts: (data) => api.post('/analyse/compare', data)
 }
 
-
-// Review service
-export const reviewService = {
-  getReview: (contractId) => api.get(`/review/${contractId}`),
-  createReview: (reviewData) => api.post('/review', reviewData)
-}
-
-// Scanner service
+// Scanner service - matches Kong configuration
 export const scannerService = {
-  scanContract: (contractId) => api.post('/scanner', { contractId }),
+  scanContract: (formData) => api.post('/scanner', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   getScanResults: (scanId) => api.get(`/scanner/${scanId}`)
 }
 
-// Suggestion service
-export const suggestionService = {
-  getSuggestions: (contractId) => api.get(`/suggestions/${contractId}`),
-  createSuggestion: (suggestionData) => api.post('/suggestions', suggestionData)
+// Compare service - for contract comparison functionality
+export const compareService = {
+  compareContracts: (formData) => api.post('/compare', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getComparisonResult: (comparisonId) => api.get(`/compare/${comparisonId}`)
 }
 
-// Suggestion history service
-export const suggestionHistoryService = {
-  getHistory: () => api.get('/suggestion-history'),
-  getHistoryById: (id) => api.get(`/suggestion-history/${id}`)
-}
+// Commented out services that are not currently active in Kong
+// Uncomment when these services are enabled
+
+// // Review service
+// export const reviewService = {
+//   getReview: (contractId) => api.get(`/review/${contractId}`),
+//   createReview: (reviewData) => api.post('/review', reviewData)
+// }
+
+// // Suggestion service
+// export const suggestionService = {
+//   getSuggestions: (contractId) => api.get(`/suggestions/${contractId}`),
+//   createSuggestion: (suggestionData) => api.post('/suggestions', suggestionData)
+// }
+
+// // Suggestion history service
+// export const suggestionHistoryService = {
+//   getHistory: () => api.get('/suggestion-history'),
+//   getHistoryById: (id) => api.get(`/suggestion-history/${id}`)
+// }
+
+// // Open router wrapper service
+// export const openRouterService = {
+//   processRequest: (data) => api.post('/open-router', data)
+// }
