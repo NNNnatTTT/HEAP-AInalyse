@@ -10,9 +10,8 @@ services:
     ports:
       - "5007:5007"  # Match the port in your app.py
     environment:
-      - SCANNER_URL=http://localhost:/scan  # Replace with actual service URLs
-      - DOCUMENT_URL=http://document-service:8081/process
-      - AI_URL=http://ai-service:8082/analyze
+      SUPABASE_URL: https://zlmaxfrnzadneyrgrotm.supabase.co
+      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsbWF4ZnJuemFkbmV5cmdyb3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MTY4NDEsImV4cCI6MjA1ODA5Mjg0MX0.SNUFijz1UbZEE_nvEdukjyPuPOAr2uJpXL_2gIO27tw
 
     networks:
       - my_shared_network

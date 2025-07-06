@@ -127,6 +127,23 @@
         {{ successMessage }}
       </div>
     </div>
+
+    <!-- Analysis Output -->
+    <div
+      v-if="pages.length"
+      class="max-w-4xl mx-auto mt-10 bg-white p-8 rounded-xl shadow-xl"
+    >
+      <h2 class="text-2xl font-bold mb-4 text-gray-800">OCR Result</h2>
+      <div
+        v-for="(page, idx) in pages"
+        :key="idx"
+        class="mb-6 border-l-4 border-indigo-500 pl-4"
+      >
+        <h3 class="font-semibold mb-2 text-indigo-600">Page {{ idx + 1 }}</h3>
+        <pre class="whitespace-pre-wrap text-gray-700">{{ page }}</pre>
+      </div>
+    </div>
+
   </div>
 </template>
 <script>
@@ -142,7 +159,8 @@ export default {
       uploadProgress: 0,
       errorMessage: null,
       successMessage: null,
-      analysisResult: null
+      analysisResult: null,
+      pages: []
     }
   },
   methods: {

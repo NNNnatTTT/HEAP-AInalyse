@@ -2,13 +2,13 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  - name: auth-service
-    url: http://auth:5001
-    routes:
-      - name: auth-route
-        paths:
-          - /auth
-        strip_path: true
+  # - name: auth-service
+  #   url: http://auth:5001
+  #   routes:
+  #     - name: auth-route
+  #       paths:
+  #         - /auth
+  #       strip_path: true
 
   # - name: open-router-wrapper-service
   #   url: http://open-router-wrapper:5002
@@ -26,13 +26,13 @@ services:
   #         - /review
   #       strip_path: true
 
-  # - name: scanner-service
-  #   url: http://scanner:5004
-  #   routes:
-  #     - name: scanner-route
-  #       paths:
-  #         - /scanner
-  #       strip_path: true
+  - name: scanner
+    url: http://scanner:5004
+    routes:
+      - name: scanner-route
+        paths:
+          - /scanner
+        strip_path: true
 
   # - name: suggestion-service
   #   url: http://suggestion-service:5005
@@ -50,13 +50,13 @@ services:
   #         - /suggestion-history
   #       strip_path: true
 
-  # - name: upload-service
-  #   url: http://upload-service:5007
-  #   routes:
-  #     - name: upload-route
-  #       paths:
-  #         - /upload
-  #       strip_path: true
+  - name: upload-service
+    url: http://upload-service:5007
+    routes:
+      - name: upload-route
+        paths:
+          - /upload-service
+        strip_path: false
 
   # - name: analyse-service
   #   url: http://analyse-service:5008
@@ -65,6 +65,15 @@ services:
   #       paths:
   #         - /analyse
   #       strip_path: true
+
+  - name: ai-model
+    url: http://ai-model:5020
+    routes:
+      - name: analyse-route
+        paths: 
+          - /analyse
+        strip_path: false
+
 
 plugins:
   - name: cors
@@ -123,7 +132,7 @@ plugins:
   #   enabled: true
 
   # - name: jwt
-  #   service: scanner-service
+  #   service: scanner
   #   config:
   #     secret_is_base64: false
   #     key_claim_name: kid

@@ -18,16 +18,22 @@ export const authService = {
 
 // Upload service
 export const uploadService = {
-  uploadContract: (formData) => api.post('/upload', formData, {
+  uploadContract: (formData) => api.post('/upload-service', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
 
-// Analysis service
+// // Analysis service
+// export const analysisService = {
+//   analyzeContract: (contractId) => api.post('/analyse', { contractId }),
+//   getAnalysisResult: (analysisId) => api.get(`/analyse/${analysisId}`)
+// }
+
 export const analysisService = {
-  analyzeContract: (contractId) => api.post('/analyse', { contractId }),
-  getAnalysisResult: (analysisId) => api.get(`/analyse/${analysisId}`)
+  analyzeContract: (pages, promptKey, prompt) =>
+    api.post('/analyse', { pages, promptKey, prompt })
 }
+
 
 // Review service
 export const reviewService = {
