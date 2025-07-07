@@ -10,21 +10,21 @@ services:
   #         - /auth
   #       strip_path: true
 
-  # - name: open-router-wrapper-service
-  #   url: http://open-router-wrapper:5002
-  #   routes:
-  #     - name: open-router-wrapper-route
-  #       paths:
-  #         - /open-router
-  #       strip_path: true
+  - name: open-router-wrapper-service
+    url: http://open-router-wrapper:5002
+    routes:
+      - name: open-router-wrapper-route
+        paths:
+          - /open-router
+        strip_path: true
 
-  # - name: review-service
-  #   url: http://review-service:5003
-  #   routes:
-  #     - name: review-route
-  #       paths:
-  #         - /review
-  #       strip_path: true
+  - name: review-service
+    url: http://review-service:5003
+    routes:
+      - name: review-route
+        paths:
+          - /review-service
+        strip_path: true
 
   - name: scanner
     url: http://scanner:5004
@@ -69,9 +69,9 @@ services:
   - name: ai-model
     url: http://ai-model:5020
     routes:
-      - name: analyse-route
+      - name: ai-route
         paths: 
-          - /analyse
+          - /ai
         strip_path: false
 
 
