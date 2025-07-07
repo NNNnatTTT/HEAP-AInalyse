@@ -246,7 +246,33 @@ export default {
 
         this.uploadProgress = 100
         // — display whatever comes back from the upload service:
-        this.analysisResult = uploadResponse.data
+        
+        // 1) get raw JSON back from uploadService
+        const result = uploadResponse.data
+
+        // 2) drill into the LLM content string
+        const raw = result.choices?.[0]?.message?.content || ''
+
+        // 3) strip any leading/trailing quotes
+        const stripped = raw.replace(/^"|"$/g, '')
+
+        // 4) split on the “;” delimiter into individual clause entries
+        const entries = stripped
+          .split(';')
+          .map(s => s.trim())
+          .filter(Boolean)
+
+        // 5) map each “[Title], [Problem], [Suggestion]” into an object
+        this.analysisResult = entries.map(entry => {
+          const m = entry.match(/\[(.*?)\]\s*,\s*\[(.*?)\]\s*,\s*\[(.*?)\]/)
+          if (!m) return { title: entry, summary: entry }
+          const [, title, problem, suggestion] = m
+          return { 
+            title, 
+            summary: problem + ' → ' + suggestion
+          }
+        })
+
 
         this.successMessage = 'File processed successfully!'
       } catch (error) {

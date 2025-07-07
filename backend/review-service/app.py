@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from supabase import create_client, Client
 import requests
+import logging
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {
@@ -252,12 +253,18 @@ def review_document():
                 "details": e.response.text
             }
         return jsonify(error="AI-model failed", **detail), 502
+    
+    print("📝 review-service raw response:", ai_resp.json())
+    ai_payload = ai_resp.json()
+    app.logger.info(f"📝 review-service raw response: {ai_payload}")
 
     # Return the AI-model’s JSON straight back
     return jsonify(ai_resp.json()), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5003, debug=True)
+    app.logger.setLevel(logging.INFO)
+    app.run(host='0.0.0.0', port=5003, debug=True, use_reloader=False)
+    # app.run(host='0.0.0.0', port=5003, debug=True)
 
 
 
