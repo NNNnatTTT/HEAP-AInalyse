@@ -22,7 +22,7 @@ services:
     build:
       context: ./auth-service
       dockerfile: Dockerfile
-    container_name: auth
+    container_name: auth-service
     ports:
       - "5001:5001"
     environment:

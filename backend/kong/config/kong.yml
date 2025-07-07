@@ -2,13 +2,13 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  # - name: auth-service
-  #   url: http://auth:5001
-  #   routes:
-  #     - name: auth-route
-  #       paths:
-  #         - /auth
-  #       strip_path: true
+  - name: auth-service
+    url: http://auth:5001
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+        strip_path: true
 
   - name: open-router-wrapper-service
     url: http://open-router-wrapper:5002
@@ -18,17 +18,6 @@ services:
           - /open-router
         strip_path: true
 
-<<<<<<< Updated upstream
-=======
-  - name: open-router-wrapper-service
-    url: http://open-router-wrapper:5002
-    routes:
-      - name: open-router-wrapper-route
-        paths:
-          - /open-router
-        strip_path: true
-
->>>>>>> Stashed changes
   - name: review-service
     url: http://review-service:5003
     routes:
