@@ -147,7 +147,7 @@
   </div>
 </template>
 <script>
-import { uploadService, analysisService } from '@/services'
+import { uploadService} from '@/services'
 
 export default {
   name: 'HomeView',
@@ -235,34 +235,26 @@ export default {
       this.errorMessage = null
       this.uploadProgress = 0
       
+
       try {
         const formData = new FormData()
         formData.append('file', this.selectedFile)
-        
-        // Upload file through Kong gateway
+
+        this.uploadProgress = 10
+        // 🔥 Only call the upload service and wait for its final result:
         const uploadResponse = await uploadService.uploadContract(formData)
-        const contractId = uploadResponse.data.contractId
-        
-        this.uploadProgress = 50
-        
-        // Trigger analysis
-        const analysisResponse = await analysisService.analyzeContract(contractId)
-        this.analysisResult = analysisResponse.data
-        
+
         this.uploadProgress = 100
-        this.successMessage = 'Contract analyzed successfully!'
-        
-        // Clear selected file after successful upload
-        setTimeout(() => {
-          this.selectedFile = null
-          this.$refs.fileInput.value = ''
-        }, 2000)
-        
+        // — display whatever comes back from the upload service:
+        this.analysisResult = uploadResponse.data
+
+        this.successMessage = 'File processed successfully!'
       } catch (error) {
-        console.error('Upload/Analysis error:', error)
-        this.errorMessage = error.response?.data?.message || 'Upload failed. Please try again.'
+        console.error('Upload error:', error)
+        this.errorMessage =
+          error.response?.data?.message || 'Upload failed. Please try again.'
       } finally {
-        this.isUploading = false
+        this.isUploading    = false
         this.uploadProgress = 0
       }
     }

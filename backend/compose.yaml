@@ -22,7 +22,7 @@ services:
     build:
       context: ./auth-service
       dockerfile: Dockerfile
-    container_name: auth
+    container_name: auth-service
     ports:
       - "5001:5001"
     environment:
@@ -41,16 +41,16 @@ services:
   #     SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
   #     SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
 
-  # review-service:
-  #   build:
-  #     context: ./review-service
-  #     dockerfile: Dockerfile
-  #   container_name: review-service
-  #   ports:
-  #     - "5003:5003"
-  #   environment:
-  #     SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-  #     SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+  review-service:
+    build:
+      context: ./review-service
+      dockerfile: Dockerfile
+    container_name: review-service
+    ports:
+      - "5003:5003"
+    environment:
+      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
+      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
 
   scanner:
     build:

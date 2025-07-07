@@ -19,7 +19,7 @@
 
 FROM python:3.11-slim
 WORKDIR /app
-COPY app.py .
+COPY . /app
 RUN pip install flask flask-cors requests
 ENV PORT=5020
 EXPOSE 5020

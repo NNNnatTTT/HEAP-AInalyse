@@ -287,26 +287,43 @@ def get_all_title(modsecyear):
 
 # def update_document(document_id):
 
-# --------------------  UPLOAD + SCAN  --------------------
+
+
+
 ALLOWED_MIME = {"application/pdf"}
 
+# ─── helper for calling review-service ─────────────────────────────
+def call_review_service(pages):
+    """
+    Sends the OCR pages array to review-service and returns its JSON.
+    Adjust the URL and payload shape as needed.
+    """
+    try:
+        resp = requests.post(
+            "http://review-service:5003/review-service",  # ← update host/port/path
+            json={"pages": pages},
+            timeout=6000
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        app.logger.error(f"review-service error: {e}")
+        # bubble up so we can return a proper 5xx
+        raise
+
+# ─── single endpoint that scans then reviews ────────────────────────
 @app.route("/upload-service", methods=["POST"])
-def upload_and_scan():
-    """
-    Receives a PDF from the UI, pipes it to scanner,
-    and returns the pages’ text as JSON.
-    """
+def upload_and_review():
     file = request.files.get("file")
     if not file or file.mimetype not in ALLOWED_MIME:
         return jsonify(error="Please upload a PDF"), 400
 
-    # read bytes once so we can both forward & (optionally) keep them
     pdf_bytes = file.read()
 
-    # --- call scanner ----------------------------------------
+    # 1) call scanner
     try:
         scan_resp = requests.post(
-            "http://scanner:5004/scan_document",   # container name or docker-compose service
+            "http://scanner:5004/scan_document",
             files={"file": ("upload.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
             timeout=6000,
         )
@@ -314,14 +331,53 @@ def upload_and_scan():
     except requests.RequestException as e:
         return jsonify(error="scanner failed", details=str(e)), 502
 
-    ocr_res = scan_resp.json()        # {"message": "...", "text": "…"}
-    pages_text = ocr_res.get("text", "")
+    ocr_res = scan_resp.json()
+    raw_text = ocr_res.get("text", "")
+    pages = [p.strip() for p in raw_text.split("\n--- Page") if p.strip()]
 
-    # split each “--- Page N ---” section into a list
-    pages = [p.strip() for p in pages_text.split("\n--- Page") if p.strip()]
-    return jsonify(pages=pages, page_count=len(pages))
+    # 2) forward those pages to review-service
+    try:
+        review_result = call_review_service(pages)
+    except Exception as e:
+        return jsonify(error="review-service failed", details=str(e)), 502
 
+    # 3) return review-service’s JSON straight back to the UI
+    return jsonify(review_result)
 
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5007, debug=True)
+
+
+
+
+# @app.route("/upload-service", methods=["POST"])
+# def upload_and_scan():
+#     """
+#     Receives a PDF from the UI, pipes it to scanner,
+#     and returns the pages’ text as JSON.
+#     """
+#     file = request.files.get("file")
+#     if not file or file.mimetype not in ALLOWED_MIME:
+#         return jsonify(error="Please upload a PDF"), 400
+
+#     # read bytes once so we can both forward & (optionally) keep them
+#     pdf_bytes = file.read()
+
+#     # --- call scanner ----------------------------------------
+#     try:
+#         scan_resp = requests.post(
+#             "http://scanner:5004/scan_document",   # container name or docker-compose service
+#             files={"file": ("upload.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
+#             timeout=6000,
+#         )
+#         scan_resp.raise_for_status()
+#     except requests.RequestException as e:
+#         return jsonify(error="scanner failed", details=str(e)), 502
+
+#     ocr_res = scan_resp.json()        # {"message": "...", "text": "…"}
+#     pages_text = ocr_res.get("text", "")
+
+#     # split each “--- Page N ---” section into a list
+#     pages = [p.strip() for p in pages_text.split("\n--- Page") if p.strip()]
+#     return jsonify(pages=pages, page_count=len(pages))
