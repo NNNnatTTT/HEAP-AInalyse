@@ -11,6 +11,7 @@ CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}})
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 # ← your OpenRouter creds must be set in the environment:
 OPENROUTER_KEY   = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/cypher-alpha:free")
@@ -121,6 +122,28 @@ def ai():
     except requests.RequestException as e:
         detail = {"status": e.response.status_code, "details": e.response.text} if e.response else {}
 >>>>>>> Stashed changes
+=======
+# initialize once
+ai_client = OpenRouterWrapper()
+
+@app.route("/ai", methods=["POST"])
+def ai():
+    body   = request.get_json(force=True) or {}
+    pages  = body.get("pages")
+    prompt = body.get("prompt")
+
+    # 1) validate
+    if not isinstance(pages, list) or not pages:
+        return jsonify(error="Missing or invalid 'pages'"), 400
+    if not prompt or not isinstance(prompt, str):
+        return jsonify(error="Missing or invalid 'prompt'"), 400
+
+    # 2) delegate to wrapper
+    try:
+        result = ai_client.generate(pages=pages, system_prompt=prompt)
+    except requests.RequestException as e:
+        detail = {"status": e.response.status_code, "details": e.response.text} if e.response else {}
+>>>>>>> Stashed changes
         return jsonify(error="AI request failed", **detail), 502
     except RuntimeError as e:
         return jsonify(error=str(e)), 500
@@ -134,6 +157,7 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port, debug=True)
 
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 # from flask import Flask, request, jsonify
@@ -363,6 +387,8 @@ if __name__ == "__main__":
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
 # import os
 # import requests
@@ -426,6 +452,9 @@ if __name__ == "__main__":
 #     port = int(os.getenv("PORT", 5020))
 #     app.run(host="0.0.0.0", port=port, debug=True)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

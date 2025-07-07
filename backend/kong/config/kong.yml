@@ -18,6 +18,17 @@ services:
           - /open-router
         strip_path: true
 
+<<<<<<< Updated upstream
+=======
+  - name: open-router-wrapper-service
+    url: http://open-router-wrapper:5002
+    routes:
+      - name: open-router-wrapper-route
+        paths:
+          - /open-router
+        strip_path: true
+
+>>>>>>> Stashed changes
   - name: review-service
     url: http://review-service:5003
     routes:
