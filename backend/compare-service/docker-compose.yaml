@@ -1,20 +1,19 @@
 version: '3.8'
 
 services:
-  upload-service:
+  compare-service:
     build:
       context: ./
       dockerfile: Dockerfile
-    image: yiluan2023/upload-service:1.0
-    container_name: upload-service
+    container_name: compare-service
     ports:
-      - "5007:5007"  # Match the port in your app.py
+      - "5010:5010"
     environment:
-      SUPABASE_URL: https://zlmaxfrnzadneyrgrotm.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsbWF4ZnJuemFkbmV5cmdyb3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MTY4NDEsImV4cCI6MjA1ODA5Mjg0MX0.SNUFijz1UbZEE_nvEdukjyPuPOAr2uJpXL_2gIO27tw
-
+      AI_MODEL_URL: http://ai-model:5020
+      SCANNER_URL: http://scanner:5004
     networks:
       - my_shared_network
+
 networks:
   my_shared_network:
     external: false

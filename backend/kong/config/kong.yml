@@ -58,21 +58,21 @@ services:
           - /upload-service
         strip_path: false
 
-  # - name: analyse-service
-  #   url: http://analyse-service:5008
-  #   routes:
-  #     - name: analyse-route
-  #       paths:
-  #         - /analyse
-  #       strip_path: true
+  - name: analyse-service
+    url: http://analyse-service:5008
+    routes:
+      - name: analyse-route
+        paths:
+          - /analyse
+        strip_path: true
 
-  # - name: compare-service
-  #   url: http://compare-service:5010
-  #   routes:
-  #     - name: compare-route
-  #       paths:
-  #         - /compare
-  #       strip_path: true
+  - name: compare-service
+    url: http://compare-service:5010
+    routes:
+      - name: compare-route
+        paths:
+          - /compare
+        strip_path: true
 
   - name: ai-model
     url: http://ai-model:5020

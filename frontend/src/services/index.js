@@ -37,7 +37,7 @@ export const scannerService = {
 
 // Compare service - for contract comparison functionality
 export const compareService = {
-  compareContracts: (formData) => api.post('/compare', formData, {
+  compareContracts: (formData) => api.post('/compare/compare', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   getComparisonResult: (comparisonId) => api.get(`/compare/${comparisonId}`)

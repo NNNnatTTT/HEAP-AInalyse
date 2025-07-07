@@ -8,8 +8,9 @@ services:
     ports:
       - "9697:9697"
     environment:
-      SUPABASE_URL: https://zlmaxfrnzadneyrgrotm.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpsbWF4ZnJuemFkbmV5cmdyb3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1MTY4NDEsImV4cCI6MjA1ODA5Mjg0MX0.SNUFijz1UbZEE_nvEdukjyPuPOAr2uJpXL_2gIO27tw
+        OPENROUTER_API_KEY: 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
+        OPENROUTER_MODEL: openrouter/cypher-alpha:free
+
     networks:
       - my_shared_network
 
