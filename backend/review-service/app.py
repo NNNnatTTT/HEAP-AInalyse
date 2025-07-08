@@ -22,14 +22,15 @@ with open(os.path.join(BASE, "prompts", "review-prompt.json")) as f:
 USER_PROMPT = prompt_data["prompt"]
 
 AI_MODEL_URL = os.getenv("AI_MODEL_URL", "http://ai-model:5020")
-ANALYZE_RESULTS_URL = os.getenv("ANALYZE_RESULTS_URL", "http://analyse-service:5008")
+ANALYZE_RESULTS_URL = os.getenv("ANALYZE_RESULTS_URL", "http://analyse-results:5008")
 
 app.logger.setLevel(logging.INFO)
 
 @app.route('/review-service', methods=['POST'])
 def review_document():
     payload = request.get_json(force=True) or {}
-    pages   = payload.get("pages")
+    pages = payload.get("pages")
+    document_id = payload.get("document_id")  # Get document ID from upload service
 
     if not isinstance(pages, list) or not pages:
         return jsonify(error="No pages provided"), 400
@@ -38,39 +39,66 @@ def review_document():
     try:
         ai_resp = requests.post(
             f"{AI_MODEL_URL}/ai",
-            json={ "pages": pages, "prompt": USER_PROMPT },
+            json={"pages": pages, "prompt": USER_PROMPT},
             timeout=90
         )
         ai_resp.raise_for_status()
     except requests.RequestException as e:
         detail = {}
         if e.response is not None:
-            detail = { "status": e.response.status_code, "details": e.response.text }
+            detail = {"status": e.response.status_code, "details": e.response.text}
         return jsonify(error="AI-model failed", **detail), 502
 
     ai_payload = ai_resp.json()
     app.logger.info("📝 AI raw response: %s", ai_payload)
 
-    # 2) Generate our own file_id
-    new_file_id = str(uuid.uuid4())
-    app.logger.info("🆕 Generated file_id=%s", new_file_id)
+    # 2) Use provided document_id or generate new one
+    file_id = document_id if document_id else str(uuid.uuid4())
+    app.logger.info("🆕 Using file_id=%s", file_id)
 
     # 3) Persist to analyse-results
     try:
+        save_payload = {
+            "file_id": file_id,
+            "result": ai_payload
+        }
+        
         save_resp = requests.post(
             f"{ANALYZE_RESULTS_URL}/analyse-results",
-            json={ "file_id": new_file_id, "result": ai_payload },
-            timeout=10
+            json=save_payload,
+            
         )
         save_resp.raise_for_status()
-        app.logger.info("✅ analyse-results replied %d: %s",
-                        save_resp.status_code, save_resp.text)
-    except requests.RequestException:
-        app.logger.exception("❌ Failed to save to analyse-results for file_id=%s",
-                             new_file_id)
+        
+        save_data = save_resp.json()
+        analysis_result_id = save_data.get('data', {}).get('id')
+        
+        app.logger.info("✅ analyse-results saved: ID=%s", analysis_result_id)
+        
+        enhanced_response = ai_resp.json()
+        enhanced_response.update({
+            "analysis_result_id": analysis_result_id,
+            "file_id": file_id,
+            "document_id": document_id,  # Include original document ID
+            "saved_to_database": True
+        })
+        
+        return jsonify(enhanced_response), 200
+        
+    except Exception as e:
+        app.logger.exception("❌ Failed to save analysis results: %s", str(e))
+        
+        fallback_response = ai_resp.json()
+        fallback_response.update({
+            "file_id": file_id,
+            "document_id": document_id,
+            "saved_to_database": False,
+            "save_error": str(e)
+        })
+        
+        return jsonify(fallback_response), 200
 
-    # 4) Return both the generated ID and the AI result
-    return jsonify(ai_resp.json()), 200
+
 
 
 if __name__ == '__main__':
@@ -81,88 +109,3 @@ if __name__ == '__main__':
 
 
 
-# @app.route('/review-service', methods=['POST'])
-# def review_document():
-#     data = request.get_json(force=True) or {}
-#     pages = data.get("pages")
-#     file_id = data.get("file_id") 
-#     if not isinstance(pages, list) or not pages:
-#         return jsonify(error="No pages provided"), 400
-
-#     # Simply hand off pages + your single prompt to the ai-model service:
-#     try:
-#         ai_resp = requests.post(
-#             f"{AI_MODEL_URL}/ai",
-#             json={
-#                 "pages":  pages,
-#                 "prompt": USER_PROMPT
-#             },
-#             timeout=90
-#         )
-#         ai_resp.raise_for_status()
-#     except requests.RequestException as e:
-#         detail = {}
-#         if e.response is not None:
-#             detail = {
-#                 "status":  e.response.status_code,
-#                 "details": e.response.text
-#             }
-#         return jsonify(error="AI-model failed", **detail), 502
-    
-#     print("📝 review-service raw response:", ai_resp.json())
-#     ai_payload = ai_resp.json()
-#     app.logger.info(f"📝 review-service raw response: {ai_payload}")
-
-#     app.logger.info("🔗 Persisting to Analyse-service at %s/analyse-results with file_id=%s",
-#                 ANALYZE_RESULTS_URL, file_id)
-
-
-#     # 2) Persist to analyse service
-#     if file_id:
-#         try:
-#             save_resp = requests.post(
-#                 f"{ANALYZE_RESULTS_URL}/analyse-results",
-#                 json={ "file_id": file_id, "result": ai_payload },
-#                 timeout=10
-#             )
-#             save_resp.raise_for_status()
-#         except requests.RequestException as e:
-#             app.logger.error("Failed to save to analyse", exc_info=e)
-
-#     # Return the AI-model’s JSON straight back
-#     return jsonify(ai_resp.json()), 200
-
-
-
-
-
-
-
-
-
-
-
-# @app.route('/review_document/<document_id>', methods=['POST'])
-# def review_doc(document_name):
-#     # Get text for review
-#     # review based on training from correct contracts
-#     # Discrepencies are highlighted and the location
-#         # Of the fucked up lines are saved in JSON in analysis results
-#         # To be used by suggestions
-
-
-
-#     # From document-storage-service, NOT upload service
-#     DSS_getDocByID_url = f"http://localhost:<port>/get_document/{document_name}"
-
-#     try:
-#         response = requests.get(DSS_getDocByID_url)
-#         if response.status_code == 200:
-#             data = response.json()
-#             document = data["document"]
-#             # Review pipelining
-
-#         else:
-#             print(f"Error: {response.status_code} - {response.text}")
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500

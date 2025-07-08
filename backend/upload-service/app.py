@@ -4,380 +4,167 @@ from supabase import create_client, Client
 import requests
 import os
 import io, uuid, tempfile
-
-
+import jwt
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {
     "origins": ["http://localhost:5173"],
     "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type"]
+    "allow_headers": ["Content-Type", "Authorization"]
 }})
+
 # Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
-
-
-@app.route('/add_session/<modsecyear>', methods=['GET'])
-def add_session(modsecyear):
-    try:
-        # Check which sessions already exist
-        existing_sessions = []
-        for i in range(1, 13):
-            title = f"w{i}"
-            response = (
-                supabase
-                .from_('session')
-                .select('*')
-                .match({'modsecyear': modsecyear, 'title': title})
-                .execute()
-            )
-            if response.data:
-                existing_sessions.append(title)
-        
-        if len(existing_sessions) == 12:
-            return jsonify({"message": "All session records already exist"}), 200
-        
-        # Create records for sessions that don't exist
-        new_sessions = []
-        for i in range(1, 13):
-            title = f"w{i}"
-            if title not in existing_sessions:
-                new_sessions.append({
-                    "modsecyear": modsecyear, 
-                    "title": title, 
-                    "active": False
-                })
-        
-        # Insert new sessions into Supabase
-        if new_sessions:
-            response = (
-                supabase
-                .from_('session')
-                .insert(new_sessions)
-                .execute()
-            )
-            return jsonify({
-                "message": f"Added {len(new_sessions)} new sessions. {len(existing_sessions)} sessions already existed.",
-                "new_sessions": [s['title'] for s in new_sessions],
-                "existing_sessions": existing_sessions,
-                "data": response.data
-            })
-        else:
-            return jsonify({"message": "All sessions already exist", "existing_sessions": existing_sessions})
-            
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/update_active', methods=['POST'])
-def update_active():
-    try:
-        data = request.json
-        modsecyear = data.get("modsecyear")
-        title = data.get("title")
-        active = data.get("active")
-        if(active):
-            res = (
-            supabase
-            .from_('session')
-            .update({"active": False})
-            .match({"modsecyear": modsecyear})
-            .execute()
-        )  
-            
-
-        if modsecyear is None or title is None or active is None:
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Update Supabase record
-        response = (
-            supabase
-            .from_('session')
-            .update({"active": active})
-            .match({"modsecyear": modsecyear, "title": title})
-            .execute()
-        )
-
-
-        return jsonify({"message": "Update successful", "data": response.data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/get_active', methods=['GET'])
-def get_active():
-    try:
-        session_id = request.args.get("session_id")
-        modsecyear = request.args.get("modsecyear")
-        title = request.args.get("title")
-
-        if session_id:
-            response = (
-                supabase
-                .from_('session')
-                .select("active")
-                .eq("session_id", session_id)
-                .execute()
-            )
-        elif modsecyear and title:
-            response = (
-                supabase
-                .from_('session')
-                .select("active")
-                .match({"modsecyear": modsecyear, "title": title})
-                .execute()
-            )
-
-        elif modsecyear:
-            response = (
-                supabase
-                .from_('session')
-                .select("session_id","title")
-                .match({"modsecyear": modsecyear})
-                .is_("active", True)
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        return jsonify({"message": "Query successful", "data": response.data})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/get_session_id', methods=['GET'])
-def get_session_id():
-    try:
-        modsecyear = request.args.get("modsecyear")
-        title = request.args.get("title")
-
-        if modsecyear and title:
-            response = (
-                supabase
-                .from_('session')
-                .select("session_id")
-                .match({"modsecyear": modsecyear, "title": title})
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        # Check if data exists and return the first element, else return an error
-        if response.data:
-            return jsonify(response.data[0]), 200
-        else:
-            return jsonify({"error": "No matching session found"}), 404
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-@app.route('/get_modsecyear', methods=['GET'])
-def get_modsecyear():
-    try:
-        session_id= request.args.get("session_id")
-
-        if session_id:
-            response = (
-                supabase
-                .from_('session')
-                .select("modsecyear")
-                .match({"session_id": session_id})
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        # Check if data exists and return the first element, else return an error
-        if response.data:
-            return jsonify(response.data[0]), 200
-        else:
-            return jsonify({"error": "No matching modsecyear found"}), 404
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/get_all_title/<modsecyear>', methods=['GET'])
-def get_all_title(modsecyear):
-    try:
-
-        if modsecyear:
-            response = (
-                supabase
-                .from_('session')
-                .select("title","session_id")
-                .match({"modsecyear": modsecyear})
-                .execute()
-            )
-        else:
-            return jsonify({"error": "Missing required query parameters"}), 400
-
-        # Check if data exists and return the first element, else return an error
-        data = response.data
-        if response:
-            return jsonify(data), 200
-        else:
-            return jsonify({"error": "No matching modsecyear found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# Example service URLs (replace with your actual endpoints)
-# SCANNER_URL = "SCANNER_URL"
-# DOCUMENT_SERVICE = "DOCUMENT_URL"
-# AI_SERVICE = "AI_URL"
-
-# @app.route('/upload-service', methods=['POST'])
-# def upload_and_process_pdf():
-#     if 'file' not in request.files:
-#         return jsonify({"error": "No file part in the request"}), 400
-
-#     file = request.files['file']
-#     if file.filename == '':
-#         return jsonify({"error": "No selected file"}), 400
-
-#     if not file.filename.lower().endswith('.pdf'):
-#         return jsonify({"error": "Only PDF files are allowed"}), 400
-
-#     try:
-#         # 1. Send PDF to scanner service
-#         scanner_response = requests.post(
-#             SCANNER_URL,
-#             files={'file': (file.filename, file, 'application/pdf')}
-#         )
-#         if scanner_response.status_code != 200:
-#             return jsonify({"error": "Scanner service error", "details": scanner_response.text}), 500
-
-#         scanner_json = scanner_response.json()
-
-#         # 2. Send scanner output to second service
-#         second_response = requests.post(
-#             DOCUMENT_SERVICE,
-#             json=scanner_json
-#         )
-#         if second_response.status_code != 200:
-#             return jsonify({"error": "Second service error", "details": second_response.text}), 500
-
-#         second_json = second_response.json()
-
-#         # 3. Send second service output to third service
-#         third_response = requests.post(
-#             AI_SERVICE,
-#             json=second_json
-#         )
-#         if third_response.status_code != 200:
-#             return jsonify({"error": "Third service error", "details": third_response.text}), 500
-
-#         final_json = third_response.json()
-#         return jsonify(final_json), 200
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
-    
-    
-# This for dashboard actually, unless want to show recent docs list
-# @app.route('/upload-service/get-all', methods=['GET'])
-# def get_all_documents():
-
-# @app.route('/upload-service/<document_id>', methods=['GET'])
-# def get_document(document_id):
-
-# def delete_document(document_id):
-
-# def update_document(document_id):
-
-
-
-
 ALLOWED_MIME = {"application/pdf"}
 
-# ─── helper for calling review-service ─────────────────────────────
-def call_review_service(pages):
+def get_current_user():
+    """Extract user UUID from JWT (Kong already validated it)"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+    
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, options={"verify_signature": False})
+        return payload.get('uuid') or payload.get('sub')
+    except:
+        return None
+
+def store_document(filename, description, ocr_result):
     """
-    Sends the OCR pages array to review-service and returns its JSON.
-    Adjust the URL and payload shape as needed.
+    Store document in document storage service and return file ID
+    """
+    try:
+        # Get current user for authentication
+        auth_header = request.headers.get('Authorization')
+        headers = {}
+        if auth_header:
+            headers['Authorization'] = auth_header
+        
+        storage_payload = {
+            "filename": filename,
+            "description": description,
+            "content": ocr_result
+        }
+        
+        resp = requests.post(
+            "http://document-storage-service:5009/upload_json",
+            json=storage_payload,
+            headers=headers,
+            timeout=30
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        app.logger.error(f"Document storage error: {e}")
+        raise
+
+def call_review_service(pages, file_id):
+    """
+    Sends the OCR pages array and file_id to review-service and returns its JSON.
     """
     try:
         resp = requests.post(
-            "http://review-service:5003/review-service",  # ← update host/port/path
-            json={"pages": pages},
-            timeout=6000
+            "http://review-service:5003/review-service",
+            json={"pages": pages, "file_id": file_id},
+
         )
         resp.raise_for_status()
         return resp.json()
     except requests.RequestException as e:
         app.logger.error(f"review-service error: {e}")
-        # bubble up so we can return a proper 5xx
         raise
 
-# ─── single endpoint that scans then reviews ────────────────────────
 @app.route("/upload-service", methods=["POST"])
 def upload_and_review():
+    # Verify user authentication
+    user_uuid = get_current_user()
+    if not user_uuid:
+        return jsonify(error="Authentication required"), 401
+
     file = request.files.get("file")
     if not file or file.mimetype not in ALLOWED_MIME:
         return jsonify(error="Please upload a PDF"), 400
 
+    # Get optional metadata from form data
+    description = request.form.get("description", "Uploaded document for analysis")
+    filename = request.form.get("filename", file.filename or "uploaded_document")
+    
+    # Remove file extension from filename for storage
+    if filename.endswith('.pdf'):
+        filename = filename[:-4]
+
     pdf_bytes = file.read()
 
-    # 1) call scanner
+    # 1) Call scanner service for OCR
     try:
         scan_resp = requests.post(
             "http://scanner:5004/scan_document",
             files={"file": ("upload.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
-            timeout=6000,
+            
         )
         scan_resp.raise_for_status()
     except requests.RequestException as e:
-        return jsonify(error="scanner failed", details=str(e)), 502
+        return jsonify(error="Scanner service failed", details=str(e)), 502
 
-    ocr_res = scan_resp.json()
-    raw_text = ocr_res.get("text", "")
+    ocr_result = scan_resp.json()
+    raw_text = ocr_result.get("text", "")
+    
+    # Parse pages for review service
     pages = [p.strip() for p in raw_text.split("\n--- Page") if p.strip()]
+    
+    if not pages:
+        return jsonify(error="No text content extracted from document"), 400
 
-    # 2) forward those pages to review-service
+    # 2) Store document in document storage service
     try:
-        review_result = call_review_service(pages)
+        storage_result = store_document(filename, description, ocr_result)
+        file_id = storage_result.get("id")
+        
+        if not file_id:
+            return jsonify(error="Failed to store document"), 500
+            
+        app.logger.info(f"Document stored successfully with ID: {file_id}")
+        
     except Exception as e:
-        return jsonify(error="review-service failed", details=str(e)), 502
+        return jsonify(error="Document storage failed", details=str(e)), 502
 
-    # 3) return review-service’s JSON straight back to the UI
-    return jsonify(review_result)
+    # 3) Forward pages and file_id to review-service
+    try:
+        review_result = call_review_service(pages, file_id)
+        
+        # Enhance response with storage information
+        enhanced_result = review_result.copy()
+        enhanced_result.update({
+            "document_storage": {
+                "file_id": file_id,
+                "filename": filename,
+                "description": description,
+                "stored_successfully": True
+            }
+        })
+        
+        return jsonify(enhanced_result)
+        
+    except Exception as e:
+        # Even if review fails, document is still stored
+        return jsonify({
+            "error": "Review service failed", 
+            "details": str(e),
+            "document_storage": {
+                "file_id": file_id,
+                "filename": filename,
+                "stored_successfully": True,
+                "note": "Document was stored successfully despite review failure"
+            }
+        }), 502
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    return jsonify({"status": "healthy", "service": "upload-service"}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5007, debug=True)
-
-
-
-
-# @app.route("/upload-service", methods=["POST"])
-# def upload_and_scan():
-#     """
-#     Receives a PDF from the UI, pipes it to scanner,
-#     and returns the pages’ text as JSON.
-#     """
-#     file = request.files.get("file")
-#     if not file or file.mimetype not in ALLOWED_MIME:
-#         return jsonify(error="Please upload a PDF"), 400
-
-#     # read bytes once so we can both forward & (optionally) keep them
-#     pdf_bytes = file.read()
-
-#     # --- call scanner ----------------------------------------
-#     try:
-#         scan_resp = requests.post(
-#             "http://scanner:5004/scan_document",   # container name or docker-compose service
-#             files={"file": ("upload.pdf", io.BytesIO(pdf_bytes), "application/pdf")},
-#             timeout=6000,
-#         )
-#         scan_resp.raise_for_status()
-#     except requests.RequestException as e:
-#         return jsonify(error="scanner failed", details=str(e)), 502
-
-#     ocr_res = scan_resp.json()        # {"message": "...", "text": "…"}
-#     pages_text = ocr_res.get("text", "")
-
-#     # split each “--- Page N ---” section into a list
-#     pages = [p.strip() for p in pages_text.split("\n--- Page") if p.strip()]
-#     return jsonify(pages=pages, page_count=len(pages))

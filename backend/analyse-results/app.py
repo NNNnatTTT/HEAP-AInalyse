@@ -28,7 +28,7 @@ def create_analysis_result():
         }
         
         response = supabase.from_('analyse_results').insert(analysis_data).execute()
-        
+        app.logger.info(analysis_data)
         if response.data:
             return jsonify({
                 "message": "Analysis result created successfully",

@@ -10,13 +10,13 @@ services:
           - /auth
         strip_path: true
 
-  - name: open-router-wrapper-service
-    url: http://open-router-wrapper:5002
-    routes:
-      - name: open-router-wrapper-route
-        paths:
-          - /open-router
-        strip_path: true
+  # - name: open-router-wrapper-service
+  #   url: http://open-router-wrapper:5002
+  #   routes:
+  #     - name: open-router-wrapper-route
+  #       paths:
+  #         - /open-router
+  #       strip_path: true
 
   - name: review-service
     url: http://review-service:5003
@@ -58,12 +58,12 @@ services:
           - /upload-service
         strip_path: false
 
-  - name: analyse-service
-    url: http://analyse-service:5008
+  - name: analyse-results
+    url: http://analyse-results:5008
     routes:
       - name: analyse-route
         paths:
-          - /analyse
+          - /analyse-results
         strip_path: true
 
   - name: compare-service
@@ -81,6 +81,14 @@ services:
         paths: 
           - /ai
         strip_path: false
+
+  - name: document-storage-service
+    url:  http://document-storage-service:5009
+    routes:
+      - name: document-storage-route
+        paths: 
+          - /document-storage-service
+        strip_path: true
 
 plugins:
   - name: cors
@@ -191,7 +199,7 @@ plugins:
   #   enabled: true
 
   # - name: jwt
-  #   service: analyse-service
+  #   service: analyse-results
   #   config:
   #     secret_is_base64: false
   #     key_claim_name: kid
@@ -214,6 +222,14 @@ plugins:
   #       - authorization
   #     uri_param_names: []
   #     cookie_names: []
+  #   enabled: true
+  # - name: jwt
+  #   service: document-storage
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify: [ exp ]
+  #     header_names: [ authorization ]
   #   enabled: true
 
 consumers:

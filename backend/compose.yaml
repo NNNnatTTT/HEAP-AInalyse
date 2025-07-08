@@ -51,7 +51,7 @@ services:
     environment:
       SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
       SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
-
+      ANALYZE_RESULTS_URL: http://analyse-results:5008
   scanner:
     build:
       context: ./scanner
@@ -96,11 +96,11 @@ services:
       SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
       SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
 
-  analyse-service:
+  analyse-results:
     build:
       context: ./analyse-results
       dockerfile: Dockerfile
-    container_name: analyse-service
+    container_name: analyse-results
     ports:
       - "5008:5008"
     environment:
@@ -131,3 +131,13 @@ services:
     environment:
       - OPENROUTER_API_KEY=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
       - OPENROUTER_MODEL=openrouter/cypher-alpha:free
+  document-storage-service:
+    build:
+      context: ./document-storage-service      # <─ create this folder
+      dockerfile: Dockerfile
+    container_name: document-storage-service
+    ports:
+      - "5009:5009"                            # next free port
+    environment:
+      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
+      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
