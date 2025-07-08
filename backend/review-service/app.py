@@ -4,6 +4,7 @@ from flask_cors import CORS
 from supabase import create_client, Client
 import requests
 import logging
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -21,45 +22,123 @@ with open(os.path.join(BASE, "prompts", "review-prompt.json")) as f:
 USER_PROMPT = prompt_data["prompt"]
 
 AI_MODEL_URL = os.getenv("AI_MODEL_URL", "http://ai-model:5020")
+ANALYZE_RESULTS_URL = os.getenv("ANALYZE_RESULTS_URL", "http://analyse-service:5008")
+
+app.logger.setLevel(logging.INFO)
 
 @app.route('/review-service', methods=['POST'])
 def review_document():
-    data = request.get_json(force=True) or {}
-    pages = data.get("pages")
+    payload = request.get_json(force=True) or {}
+    pages   = payload.get("pages")
+
     if not isinstance(pages, list) or not pages:
         return jsonify(error="No pages provided"), 400
 
-    # Simply hand off pages + your single prompt to the ai-model service:
+    # 1) Call the AI-model service
     try:
         ai_resp = requests.post(
             f"{AI_MODEL_URL}/ai",
-            json={
-                "pages":  pages,
-                "prompt": USER_PROMPT
-            },
+            json={ "pages": pages, "prompt": USER_PROMPT },
             timeout=90
         )
         ai_resp.raise_for_status()
     except requests.RequestException as e:
         detail = {}
         if e.response is not None:
-            detail = {
-                "status":  e.response.status_code,
-                "details": e.response.text
-            }
+            detail = { "status": e.response.status_code, "details": e.response.text }
         return jsonify(error="AI-model failed", **detail), 502
-    
-    print("📝 review-service raw response:", ai_resp.json())
-    ai_payload = ai_resp.json()
-    app.logger.info(f"📝 review-service raw response: {ai_payload}")
 
-    # Return the AI-model’s JSON straight back
+    ai_payload = ai_resp.json()
+    app.logger.info("📝 AI raw response: %s", ai_payload)
+
+    # 2) Generate our own file_id
+    new_file_id = str(uuid.uuid4())
+    app.logger.info("🆕 Generated file_id=%s", new_file_id)
+
+    # 3) Persist to analyse-results
+    try:
+        save_resp = requests.post(
+            f"{ANALYZE_RESULTS_URL}/analyse-results",
+            json={ "file_id": new_file_id, "result": ai_payload },
+            timeout=10
+        )
+        save_resp.raise_for_status()
+        app.logger.info("✅ analyse-results replied %d: %s",
+                        save_resp.status_code, save_resp.text)
+    except requests.RequestException:
+        app.logger.exception("❌ Failed to save to analyse-results for file_id=%s",
+                             new_file_id)
+
+    # 4) Return both the generated ID and the AI result
     return jsonify(ai_resp.json()), 200
+
 
 if __name__ == '__main__':
     app.logger.setLevel(logging.INFO)
     app.run(host='0.0.0.0', port=5003, debug=True, use_reloader=False)
     # app.run(host='0.0.0.0', port=5003, debug=True)
+
+
+
+
+# @app.route('/review-service', methods=['POST'])
+# def review_document():
+#     data = request.get_json(force=True) or {}
+#     pages = data.get("pages")
+#     file_id = data.get("file_id") 
+#     if not isinstance(pages, list) or not pages:
+#         return jsonify(error="No pages provided"), 400
+
+#     # Simply hand off pages + your single prompt to the ai-model service:
+#     try:
+#         ai_resp = requests.post(
+#             f"{AI_MODEL_URL}/ai",
+#             json={
+#                 "pages":  pages,
+#                 "prompt": USER_PROMPT
+#             },
+#             timeout=90
+#         )
+#         ai_resp.raise_for_status()
+#     except requests.RequestException as e:
+#         detail = {}
+#         if e.response is not None:
+#             detail = {
+#                 "status":  e.response.status_code,
+#                 "details": e.response.text
+#             }
+#         return jsonify(error="AI-model failed", **detail), 502
+    
+#     print("📝 review-service raw response:", ai_resp.json())
+#     ai_payload = ai_resp.json()
+#     app.logger.info(f"📝 review-service raw response: {ai_payload}")
+
+#     app.logger.info("🔗 Persisting to Analyse-service at %s/analyse-results with file_id=%s",
+#                 ANALYZE_RESULTS_URL, file_id)
+
+
+#     # 2) Persist to analyse service
+#     if file_id:
+#         try:
+#             save_resp = requests.post(
+#                 f"{ANALYZE_RESULTS_URL}/analyse-results",
+#                 json={ "file_id": file_id, "result": ai_payload },
+#                 timeout=10
+#             )
+#             save_resp.raise_for_status()
+#         except requests.RequestException as e:
+#             app.logger.error("Failed to save to analyse", exc_info=e)
+
+#     # Return the AI-model’s JSON straight back
+#     return jsonify(ai_resp.json()), 200
+
+
+
+
+
+
+
+
 
 
 
