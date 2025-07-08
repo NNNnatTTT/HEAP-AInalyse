@@ -14,8 +14,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # CREATE - Add new analysis result
 @app.route('/analyse-results', methods=['POST'])
 def create_analysis_result():
+    
     try:
         data = request.get_json()
+        app.logger.info(data)
         
         # Validate required fields
         if not data or 'file_id' not in data or 'result' not in data:

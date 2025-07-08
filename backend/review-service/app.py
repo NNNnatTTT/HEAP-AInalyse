@@ -30,7 +30,7 @@ app.logger.setLevel(logging.INFO)
 def review_document():
     payload = request.get_json(force=True) or {}
     pages = payload.get("pages")
-    document_id = payload.get("document_id")  # Get document ID from upload service
+    document_id = payload.get("file_id")  # Get document ID from upload service
 
     if not isinstance(pages, list) or not pages:
         return jsonify(error="No pages provided"), 400
@@ -53,7 +53,7 @@ def review_document():
     app.logger.info("📝 AI raw response: %s", ai_payload)
 
     # 2) Use provided document_id or generate new one
-    file_id = document_id if document_id else str(uuid.uuid4())
+    file_id = document_id 
     app.logger.info("🆕 Using file_id=%s", file_id)
 
     # 3) Persist to analyse-results
