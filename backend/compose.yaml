@@ -12,9 +12,9 @@ services:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: "config/kong.yml"
       KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
-      KONG_JWT_SECRET: "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+      KONG_JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
     volumes:
       - ./kong/config:/config
 
@@ -26,20 +26,9 @@ services:
     ports:
       - "5001:5001"
     environment:
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
-      JWT_SECRET: b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312
-
-  # open-router-wrapper:
-  #   build:
-  #     context: ./open-router-wrapper
-  #     dockerfile: Dockerfile
-  #   container_name: open-router-wrapper
-  #   ports:
-  #     - "5002:5002"
-  #   environment:
-  #     SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-  #     SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
 
   review-service:
     build:
@@ -49,9 +38,10 @@ services:
     ports:
       - "5003:5003"
     environment:
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
-      ANALYZE_RESULTS_URL: http://analyse-results:5008
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      ANALYZE_RESULTS_URL: ${ANALYZE_RESULTS_URL}
+
   scanner:
     build:
       context: ./scanner
@@ -60,30 +50,8 @@ services:
     ports:
       - "5004:5004"
     environment:
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
-
-  # suggestion-service:
-  #   build:
-  #     context: ./suggestion-service
-  #     dockerfile: Dockerfile
-  #   container_name: suggestion-service
-  #   ports:
-  #     - "5005:5005"
-  #   environment:
-  #     SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-  #     SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
-
-  # suggestion-history:
-  #   build:
-  #     context: ./suggestion-history
-  #     dockerfile: Dockerfile
-  #   container_name: suggestion-history
-  #   ports:
-  #     - "5006:5006"
-  #   environment:
-  #     SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-  #     SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
 
   upload-service:
     build:
@@ -93,8 +61,8 @@ services:
     ports:
       - "5007:5007"
     environment:
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
 
   analyse-results:
     build:
@@ -104,8 +72,8 @@ services:
     ports:
       - "5008:5008"
     environment:
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
 
   compare-service:
     build:
@@ -115,8 +83,8 @@ services:
     ports:
       - "5010:5010"
     environment:
-      AI_MODEL_URL: http://ai-model:5020
-      SCANNER_URL: http://scanner:5004
+      AI_MODEL_URL: ${AI_MODEL_URL}
+      SCANNER_URL: ${SCANNER_URL}
     depends_on:
       - scanner
       - ai-model
@@ -129,15 +97,16 @@ services:
     ports:                               
       - "5020:5020"
     environment:
-      - OPENROUTER_API_KEY=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
-      - OPENROUTER_MODEL=openrouter/cypher-alpha:free
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL}
+
   document-storage-service:
     build:
-      context: ./document-storage-service      # <─ create this folder
+      context: ./document-storage-service
       dockerfile: Dockerfile
     container_name: document-storage-service
     ports:
-      - "5009:5009"                            # next free port
+      - "5009:5009"
     environment:
-      SUPABASE_URL: https://ofpxzaxgejzpkuzigqda.supabase.co
-      SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcHh6YXhnZWp6cGt1emlncWRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2Mjc5MzgsImV4cCI6MjA2NzIwMzkzOH0.YIOl55vTXzSC5jXVMt00GrOy5TdeU1pKwlE0MfTVapg
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
