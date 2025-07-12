@@ -3,7 +3,7 @@ _transform: true
 
 services:
   - name: auth-service
-    url: http://auth:5001
+    url: ${AUTH_SERVICE_URL}
     routes:
       - name: auth-route
         paths:
@@ -11,7 +11,7 @@ services:
         strip_path: true
 
   # - name: open-router-wrapper-service
-  #   url: http://open-router-wrapper:5002
+  #   url: ${OPEN_ROUTER_WRAPPER_SERVICE_URL}
   #   routes:
   #     - name: open-router-wrapper-route
   #       paths:
@@ -19,7 +19,7 @@ services:
   #       strip_path: true
 
   - name: review-service
-    url: http://review-service:5003
+    url: ${REVIEW_SERVICE_URL}
     routes:
       - name: review-route
         paths:
@@ -27,7 +27,7 @@ services:
         strip_path: true
 
   - name: scanner
-    url: http://scanner:5004
+    url: ${SCANNER_SERVICE_URL}
     routes:
       - name: scanner-route
         paths:
@@ -35,7 +35,7 @@ services:
         strip_path: true
 
   # - name: suggestion-service
-  #   url: http://suggestion-service:5005
+  #   url: ${SUGGESTION_SERVICE_URL}
   #   routes:
   #     - name: suggestion-route
   #       paths:
@@ -43,7 +43,7 @@ services:
   #       strip_path: true
 
   # - name: suggestion-history-service
-  #   url: http://suggestion-history:5006
+  #   url: ${SUGGESTION_HISTORY_SERVICE_URL}
   #   routes:
   #     - name: suggestion-history-route
   #       paths:
@@ -51,7 +51,7 @@ services:
   #       strip_path: true
 
   - name: upload-service
-    url: http://upload-service:5007
+    url: ${UPLOAD_SERVICE_URL}
     routes:
       - name: upload-route
         paths:
@@ -59,7 +59,7 @@ services:
         strip_path: false
 
   - name: analyse-results
-    url: http://analyse-results:5008
+    url: ${ANALYSE_RESULTS_SERVICE_URL}
     routes:
       - name: analyse-route
         paths:
@@ -67,7 +67,7 @@ services:
         strip_path: true
 
   - name: compare-service
-    url: http://compare-service:5010
+    url: ${COMPARE_SERVICE_URL}
     routes:
       - name: compare-route
         paths:
@@ -75,7 +75,7 @@ services:
         strip_path: true
 
   - name: ai-model
-    url: http://ai-model:5020
+    url: ${AI_MODEL_SERVICE_URL}
     routes:
       - name: ai-route
         paths: 
@@ -83,7 +83,7 @@ services:
         strip_path: false
 
   - name: document-storage-service
-    url: http://document-storage-service:5009
+    url: ${DOCUMENT_STORAGE_SERVICE_URL}
     routes:
       - name: document-storage-route
         paths: 
@@ -238,8 +238,8 @@ plugins:
   #   enabled: true
 
 consumers:
-  - username: login_server_issuer
+  - username: ${KONG_JWT_CONSUMER_USERNAME}
     jwt_secrets:
-      - key: auth_service
-        algorithm: HS256
-        secret: b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312
+      - key: ${KONG_JWT_KEY}
+        algorithm: ${KONG_JWT_ALGORITHM}
+        secret: ${KONG_JWT_SECRET}

@@ -1,8 +1,38 @@
 services:
+  kong-config-generator:
+    image: alpine:latest
+    volumes:
+      - ./kong/config:/config
+      - ./kong.yml.template:/kong.yml.template
+    environment:
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - OPEN_ROUTER_WRAPPER_SERVICE_URL=${OPEN_ROUTER_WRAPPER_SERVICE_URL}
+      - REVIEW_SERVICE_URL=${REVIEW_SERVICE_URL}
+      - SCANNER_SERVICE_URL=${SCANNER_SERVICE_URL}
+      - SUGGESTION_SERVICE_URL=${SUGGESTION_SERVICE_URL}
+      - SUGGESTION_HISTORY_SERVICE_URL=${SUGGESTION_HISTORY_SERVICE_URL}
+      - UPLOAD_SERVICE_URL=${UPLOAD_SERVICE_URL}
+      - ANALYSE_RESULTS_SERVICE_URL=${ANALYSE_RESULTS_SERVICE_URL}
+      - COMPARE_SERVICE_URL=${COMPARE_SERVICE_URL}
+      - AI_MODEL_SERVICE_URL=${AI_MODEL_SERVICE_URL}
+      - DOCUMENT_STORAGE_SERVICE_URL=${DOCUMENT_STORAGE_SERVICE_URL}
+      - KONG_JWT_CONSUMER_USERNAME=${KONG_JWT_CONSUMER_USERNAME}
+      - KONG_JWT_KEY=${KONG_JWT_KEY}
+      - KONG_JWT_ALGORITHM=${KONG_JWT_ALGORITHM}
+      - KONG_JWT_SECRET=${KONG_JWT_SECRET}
+    command: >
+      sh -c "
+        apk add --no-cache gettext &&
+        envsubst < /kong.yml.template > /config/kong.yml &&
+        echo 'Kong configuration generated successfully!'
+      "
+
   kong:
     image: kong:latest
     container_name: kong
     restart: always
+    depends_on:
+      - kong-config-generator
     ports:
       - "8000:8000" # Proxy port
       - "8001:8001" # Admin API port
@@ -30,6 +60,17 @@ services:
       SUPABASE_KEY: ${SUPABASE_KEY}
       JWT_SECRET: ${JWT_SECRET}
 
+  # open-router-wrapper:
+  #   build:
+  #     context: ./open-router-wrapper
+  #     dockerfile: Dockerfile
+  #   container_name: open-router-wrapper
+  #   ports:
+  #     - "5002:5002"
+  #   environment:
+  #     SUPABASE_URL: ${SUPABASE_URL}
+  #     SUPABASE_KEY: ${SUPABASE_KEY}
+
   review-service:
     build:
       context: ./review-service
@@ -52,6 +93,28 @@ services:
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
+
+  # suggestion-service:
+  #   build:
+  #     context: ./suggestion-service
+  #     dockerfile: Dockerfile
+  #   container_name: suggestion-service
+  #   ports:
+  #     - "5005:5005"
+  #   environment:
+  #     SUPABASE_URL: ${SUPABASE_URL}
+  #     SUPABASE_KEY: ${SUPABASE_KEY}
+
+  # suggestion-history:
+  #   build:
+  #     context: ./suggestion-history
+  #     dockerfile: Dockerfile
+  #   container_name: suggestion-history
+  #   ports:
+  #     - "5006:5006"
+  #   environment:
+  #     SUPABASE_URL: ${SUPABASE_URL}
+  #     SUPABASE_KEY: ${SUPABASE_KEY}
 
   upload-service:
     build:
