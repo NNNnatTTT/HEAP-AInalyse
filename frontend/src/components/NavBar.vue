@@ -40,69 +40,106 @@
     </div>
   </nav>
 </template>
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+
+<script>
 import { authService } from '@/services'
 
-const router = useRouter()
-const loggingOut = ref(false)
-
-// Reactive state for authentication
-const isLoggedIn = computed(() => {
-  return !!localStorage.getItem('jwt_token')
-})
-
-const userEmail = computed(() => {
-  const userInfo = localStorage.getItem('user_info')
-  if (userInfo) {
-    try {
-      const user = JSON.parse(userInfo)
-      return user.email
-    } catch (error) {
-      console.error('Error parsing user info:', error)
+export default {
+  name: 'NavBar',
+  data() {
+    return {
+      loggingOut: false,
+      authTrigger: 0 // Reactive trigger for localStorage changes
+    }
+  },
+  computed: {
+    isLoggedIn() {
+      this.authTrigger // Make computed depend on authTrigger
+      return !!localStorage.getItem('jwt_token')
+    },
+    userEmail() {
+      this.authTrigger // Make computed depend on authTrigger
+      const userInfo = localStorage.getItem('user_info')
+      if (userInfo) {
+        try {
+          const user = JSON.parse(userInfo)
+          return user.email
+        } catch (error) {
+          console.error('Error parsing user info:', error)
+          return null
+        }
+      }
       return null
     }
-  }
-  return null
-})
-
-// Logout function
-const handleLogout = async () => {
-  loggingOut.value = true
-  
-  try {
-    // Call auth service logout (clears local storage)
-    await authService.logout()
+  },
+  methods: {
+    refreshAuth() {
+      this.authTrigger++
+    },
+    async handleLogout() {
+      this.loggingOut = true
+      
+      try {
+        // Call auth service logout (clears local storage)
+        await authService.logout()
+        
+        // Trigger reactivity update
+        this.refreshAuth()
+        
+        // Redirect to landing page
+        this.$router.push('/')
+        
+      } catch (error) {
+        console.error('Logout error:', error)
+      } finally {
+        this.loggingOut = false
+      }
+    },
+    async verifyToken() {
+      const token = localStorage.getItem('jwt_token')
+      if (token) {
+        try {
+          // Verify token is still valid
+          await authService.verify()
+        } catch (error) {
+          console.error('Token verification failed:', error)
+          // Clear invalid token
+          localStorage.removeItem('jwt_token')
+          localStorage.removeItem('user_info')
+          this.refreshAuth()
+        }
+      }
+    }
+  },
+  mounted() {
+    // Verify token on component mount
+    this.verifyToken()
     
-    // Redirect to landing page
-    router.push('/')
+    // Make refreshAuth available globally for login component
+    window.refreshAuth = this.refreshAuth
     
-  } catch (error) {
-    console.error('Logout error:', error)
-  } finally {
-    loggingOut.value = false
+    // Listen for storage changes from other tabs
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'jwt_token' || e.key === 'user_info') {
+        this.refreshAuth()
+      }
+    })
+  },
+  beforeUnmount() {
+    // Clean up global reference
+    if (window.refreshAuth === this.refreshAuth) {
+      delete window.refreshAuth
+    }
+    
+    // Remove event listener
+    window.removeEventListener('storage', this.refreshAuth)
   }
 }
-
-// Optional: Verify token on component mount
-onMounted(async () => {
-  const token = localStorage.getItem('jwt_token')
-  if (token) {
-    try {
-      // Verify token is still valid
-      await authService.verify()
-    } catch (error) {
-      console.error('Token verification failed:', error)
-      // Clear invalid token
-      localStorage.removeItem('jwt_token')
-      localStorage.removeItem('user_info')
-    }
-  }
-})
 </script>
 
+<style scoped>
 .container {
   max-width: 100%;
   overflow-x: hidden;
 }
+</style>
