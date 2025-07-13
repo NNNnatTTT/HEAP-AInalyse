@@ -52,11 +52,12 @@ export const compareService = {
 //   createReview: (reviewData) => api.post('/review', reviewData)
 // }
 
-// // Suggestion service
-// export const suggestionService = {
-//   getSuggestions: (contractId) => api.get(`/suggestions/${contractId}`),
-//   createSuggestion: (suggestionData) => api.post('/suggestions', suggestionData)
-// }
+// Suggestion service
+export const suggestionService = {
+  getSuggestions: (resultId, suggestionData) => api.post(`/suggestions/${resultId}`, suggestionData),
+  createSuggestion: (suggestionData) => api.post('/suggestions', suggestionData)
+}
+
 
 // // Suggestion history service
 // export const suggestionHistoryService = {

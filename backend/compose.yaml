@@ -100,7 +100,7 @@ services:
       dockerfile: Dockerfile
     container_name: suggestion-service
     ports:
-      - "5005:5008"
+      - "5005:5005"
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
