@@ -110,6 +110,31 @@ def get_all_files():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/user/<user_uuid>/files', methods=['GET'])
+def get_files_by_user_uuid(user_uuid):
+    """
+    Get all files for a specific user UUID
+    This endpoint is designed for the history service to retrieve files by user UUID
+    """
+    try:
+        response = (
+            supabase
+            .from_('files')
+            .select('*')
+            .eq('user_id', user_uuid)
+            .order('id', desc=True)
+            .execute()
+        )
+        
+        return jsonify({
+            "user_id": user_uuid,
+            "total_files": len(response.data),
+            "files": response.data
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/file/<fileID>', methods=['PUT'])
 def update_file(fileID):
     user_uuid = get_current_user()

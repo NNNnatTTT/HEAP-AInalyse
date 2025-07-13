@@ -81,6 +81,39 @@ def get_analysis_result(result_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# NEW FUNCTION - Get all analysis results by file ID
+@app.route('/results/<file_id>', methods=['GET'])
+def get_results_by_file_id(file_id):
+    """
+    Get all analysis results that match a specific file ID
+    This endpoint is designed for the history service to retrieve analysis results by file UUID
+    """
+    try:
+        response = (
+            supabase
+            .from_('analyse_results')
+            .select('*')
+            .eq('file_id', file_id)
+            .order('created_at', desc=True)
+            .execute()
+        )
+        
+        if response.data:
+            return jsonify({
+                "file_id": file_id,
+                "total_results": len(response.data),
+                "results": response.data
+            }), 200
+        else:
+            return jsonify({
+                "file_id": file_id,
+                "total_results": 0,
+                "results": []
+            }), 404
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # UPDATE - Update analysis result
 @app.route('/analyse-results/<result_id>', methods=['PUT'])
 def update_analysis_result(result_id):

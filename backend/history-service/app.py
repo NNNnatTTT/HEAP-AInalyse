@@ -9,29 +9,59 @@ app = Flask(__name__)
 # Configure CORS properly for preflight requests
 CORS(app)
 
-
-
 # Service URLs from environment variables
 DOCUMENT_STORAGE_SERVICE_URL = os.getenv('DOCUMENT_STORAGE_SERVICE_URL', 'http://document-storage-service:5009')
 ANALYSE_RESULTS_SERVICE_URL = os.getenv('ANALYSE_RESULTS_SERVICE_URL', 'http://analyse-results:5008')
 
-
 def get_current_user():
-    """Extract user UUID from JWT (Kong already validated it)"""
-    # Skip authentication for OPTIONS requests
+    """Extract user UUID from JWT with detailed logging"""
     if request.method == "OPTIONS":
         return None
         
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
+        app.logger.warning("No Authorization header found")
         return None
     
     token = auth_header.split(' ')[1]
     try:
+        # Decode without verification (Kong already validated)
         payload = jwt.decode(token, options={"verify_signature": False})
-        return payload.get('uuid') or payload.get('sub')
-    except:
+        
+        # Detailed logging
+        app.logger.info(f"JWT Payload: {payload}")
+        app.logger.info(f"Available keys: {list(payload.keys())}")
+        
+        # Extract user ID using your auth service logic
+        user_id = payload.get('uuid') or payload.get('sub')
+        app.logger.info(f"Extracted user ID: {user_id}")
+        app.logger.info(f"User ID type: {type(user_id)}")
+        
+        if not user_id:
+            app.logger.error("No user ID found in JWT payload")
+            return None
+            
+        return str(user_id)  # Ensure it's a string
+        
+    except Exception as e:
+        app.logger.error(f"JWT decode error: {e}")
         return None
+
+def get_documents_by_user_uuid(user_uuid):
+    """Retrieve all documents for a specific user UUID from document storage service"""
+    try:
+        resp = requests.get(
+            f"{DOCUMENT_STORAGE_SERVICE_URL}/user/{user_uuid}/files",
+            timeout=30
+        )
+        resp.raise_for_status()
+        response_data = resp.json()
+        
+        # Extract the files array from the response
+        return response_data.get('files', [])
+    except requests.RequestException as e:
+        app.logger.error(f"Document storage error: {e}")
+        raise
 
 def get_document_from_storage(document_id):
     """Retrieve document from document storage service"""
@@ -52,15 +82,22 @@ def get_document_from_storage(document_id):
         app.logger.error(f"Document storage error: {e}")
         raise
 
-def get_analysis_results(document_id):
-    """Retrieve analysis results from analyse results service using document UUID"""
+def get_analysis_results(file_id):
+    """Retrieve analysis results from analyse results service using file_id"""
     try:
         resp = requests.get(
-            f"{ANALYSE_RESULTS_SERVICE_URL}/results/{document_id}",
+            f"{ANALYSE_RESULTS_SERVICE_URL}/results/{file_id}",
             timeout=30
         )
-        resp.raise_for_status()
-        return resp.json()
+        if resp.status_code == 200:
+            response_data = resp.json()
+            # Return the results array from the new endpoint response
+            return response_data.get('results', [])
+        elif resp.status_code == 404:
+            # No analysis results found for this file
+            return None
+        else:
+            resp.raise_for_status()
     except requests.RequestException as e:
         app.logger.error(f"Analysis results service error: {e}")
         return None
@@ -76,28 +113,18 @@ def get_user_history():
         return jsonify({"error": "Unable to identify user"}), 400
 
     try:
-        auth_header = request.headers.get('Authorization')
-        headers = {}
-        if auth_header:
-            headers['Authorization'] = auth_header
-        
-        resp = requests.get(
-            f"{DOCUMENT_STORAGE_SERVICE_URL}/files",
-            headers=headers,
-            timeout=30
-        )
-        resp.raise_for_status()
-        documents = resp.json()
+        # Use the new endpoint to get documents by user UUID
+        documents = get_documents_by_user_uuid(user_uuid)
         
         enhanced_documents = []
         for doc in documents:
-            document_id = doc.get('id')
-            analysis_results = get_analysis_results(document_id)
+            file_id = doc.get('id')  # Use the file ID from document storage
+            analysis_results = get_analysis_results(file_id)
             
             enhanced_doc = {
                 "document": doc,
                 "analysis_results": analysis_results,
-                "has_analysis": analysis_results is not None
+                "has_analysis": analysis_results is not None and len(analysis_results) > 0
             }
             
             enhanced_documents.append(enhanced_doc)
@@ -130,7 +157,7 @@ def get_document_history(document_id):
         return jsonify({
             "document": document,
             "analysis_results": analysis_results,
-            "has_analysis": analysis_results is not None
+            "has_analysis": analysis_results is not None and len(analysis_results) > 0
         }), 200
         
     except requests.RequestException as e:
@@ -154,7 +181,7 @@ def get_document_analysis_only(document_id):
         document = get_document_from_storage(document_id)
         analysis_results = get_analysis_results(document_id)
         
-        if not analysis_results:
+        if not analysis_results or len(analysis_results) == 0:
             return jsonify({"error": "No analysis results found for this document"}), 404
         
         return jsonify({
@@ -180,26 +207,16 @@ def get_history_summary():
         return jsonify({"error": "Unable to identify user"}), 400
 
     try:
-        auth_header = request.headers.get('Authorization')
-        headers = {}
-        if auth_header:
-            headers['Authorization'] = auth_header
-        
-        resp = requests.get(
-            f"{DOCUMENT_STORAGE_SERVICE_URL}/files",
-            headers=headers,
-            timeout=30
-        )
-        resp.raise_for_status()
-        documents = resp.json()
+        # Use the new endpoint to get documents by user UUID
+        documents = get_documents_by_user_uuid(user_uuid)
         
         total_documents = len(documents)
         documents_with_analysis = 0
         
         for doc in documents:
-            document_id = doc.get('id')
-            analysis_results = get_analysis_results(document_id)
-            if analysis_results:
+            file_id = doc.get('id')  # Use the file ID from document storage
+            analysis_results = get_analysis_results(file_id)
+            if analysis_results and len(analysis_results) > 0:
                 documents_with_analysis += 1
         
         return jsonify({
