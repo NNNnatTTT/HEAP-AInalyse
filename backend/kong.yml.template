@@ -90,6 +90,15 @@ services:
           - /document-storage-service
         strip_path: true
 
+  - name: history-service
+    url: ${HISTORY_SERVICE_URL}
+    routes:
+      - name: history-route
+        paths:
+          - /history
+        strip_path: false
+
+
 plugins:
   - name: cors
     config:
@@ -226,6 +235,19 @@ plugins:
 
   # - name: jwt
   #   service: document-storage-service
+  #   config:
+  #     secret_is_base64: false
+  #     key_claim_name: kid
+  #     claims_to_verify:
+  #       - exp
+  #     header_names:
+  #       - authorization
+  #     uri_param_names: []
+  #     cookie_names: []
+  #   enabled: true
+
+  # - name: jwt
+  #   service: history-service
   #   config:
   #     secret_is_base64: false
   #     key_claim_name: kid

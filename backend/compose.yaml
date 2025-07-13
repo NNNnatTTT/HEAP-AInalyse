@@ -20,6 +20,7 @@ services:
       - KONG_JWT_KEY=${KONG_JWT_KEY}
       - KONG_JWT_ALGORITHM=${KONG_JWT_ALGORITHM}
       - KONG_JWT_SECRET=${KONG_JWT_SECRET}
+      - HISTORY_SERVICE_URL=${HISTORY_SERVICE_URL}
     command: >
       sh -c "
         apk add --no-cache gettext &&
@@ -173,3 +174,15 @@ services:
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
+  # History Service (newly created)
+  history-service:
+    build:
+      context: ./history-service
+      dockerfile: Dockerfile
+    container_name: history-service
+    ports:
+      - "5030:5030"
+    environment:
+      DOCUMENT_STORAGE_SERVICE_URL: ${DOCUMENT_STORAGE_SERVICE_URL}
+      ANALYSE_RESULTS_SERVICE_URL: ${ANALYSE_RESULTS_SERVICE_URL}
+

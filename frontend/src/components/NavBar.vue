@@ -7,6 +7,7 @@
       <ul class="flex space-x-6">
         <li><router-link to="/home" class="text-gray-700 hover:text-blue-600">Home</router-link></li>
         <li><router-link to="/compare" class="text-gray-700 hover:text-blue-600">Compare</router-link></li>
+        <li><router-link to="/history" class="text-gray-700 hover:text-blue-600">History</router-link></li>
         <li><router-link to="/about" class="text-gray-700 hover:text-blue-600">About</router-link></li>
       </ul>
       
