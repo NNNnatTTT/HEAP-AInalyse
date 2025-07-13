@@ -94,16 +94,16 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
 
-  # suggestion-service:
-  #   build:
-  #     context: ./suggestion-service
-  #     dockerfile: Dockerfile
-  #   container_name: suggestion-service
-  #   ports:
-  #     - "5005:5005"
-  #   environment:
-  #     SUPABASE_URL: ${SUPABASE_URL}
-  #     SUPABASE_KEY: ${SUPABASE_KEY}
+  suggestion-service:
+    build:
+      context: ./suggestion-service
+      dockerfile: Dockerfile
+    container_name: suggestion-service
+    ports:
+      - "5005:5008"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
 
   # suggestion-history:
   #   build:

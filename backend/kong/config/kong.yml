@@ -34,13 +34,13 @@ services:
           - /scanner
         strip_path: true
 
-  # - name: suggestion-service
-  #   url: http://suggestion-service:5005
-  #   routes:
-  #     - name: suggestion-route
-  #       paths:
-  #         - /suggestions
-  #       strip_path: true
+  - name: suggestion-service
+    url: http://suggestion-service:5005
+    routes:
+      - name: suggestion-route
+        paths:
+          - /suggestions
+        strip_path: true
 
   # - name: suggestion-history-service
   #   url: http://suggestion-history:5006

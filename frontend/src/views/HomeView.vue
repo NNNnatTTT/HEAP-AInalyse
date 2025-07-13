@@ -72,14 +72,44 @@
         </div>
       </div>
 
-      <!-- Results Section -->
-      <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Contract Summary</h2>
+
+      <!-- Results + Suggest Section -->
+      <div
+        v-if="analysisResult"
+        class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl"
+      >
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">
+          Contract Summary
+        </h2>
         <ul class="list-disc pl-5 space-y-2 text-gray-700">
           <li v-for="(clause, i) in analysisResult" :key="i">
             <strong>{{ clause.title }}:</strong> {{ clause.summary }}
           </li>
         </ul>
+
+        <!-- Suggest Improvements -->
+        <div class="mt-6 text-center">
+          <button
+            @click="getSuggestion"
+            :disabled="isSuggesting"
+            class="cursor-pointer bg-green-500 hover:bg-green-600
+                  disabled:opacity-70 disabled:cursor-not-allowed
+                  text-white font-bold py-2 px-6 rounded-lg"
+          >
+            <span v-if="!isSuggesting">Suggest Improvements</span>
+            <span v-else>Suggesting…</span>
+          </button>
+        </div>
+
+        <!-- Suggestions Output -->
+        <div v-if="suggestions" class="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h3 class="text-xl font-semibold mb-2">AI Suggestions</h3>
+          <ul class="list-disc pl-5 space-y-1">
+            <li v-for="(s, idx) in suggestions.items" :key="idx">
+              {{ s }}
+            </li>
+          </ul>
+        </div>
       </div>
 
       <!-- Features Section -->
@@ -160,7 +190,10 @@ export default {
       errorMessage: null,
       successMessage: null,
       analysisResult: null,
-      pages: []
+      pages: [],
+      analysisId: null,
+      isSuggesting: false,
+      suggestions: null,
     }
   },
   methods: {
@@ -245,10 +278,16 @@ export default {
         const uploadResponse = await uploadService.uploadContract(formData)
 
         this.uploadProgress = 100
+        
+        // after uploadContract()
+        const result = uploadResponse.data
+        this.analysisId = result.analysis_result_id  // ← this line is the fix
+
+
         // — display whatever comes back from the upload service:
         
         // 1) get raw JSON back from uploadService
-        const result = uploadResponse.data
+        // result = uploadResponse.data
 
         // 2) drill into the LLM content string
         const raw = result.choices?.[0]?.message?.content || ''
@@ -283,7 +322,43 @@ export default {
         this.isUploading    = false
         this.uploadProgress = 0
       }
-    }
+    },
+
+    // ← NEW: Suggest improvements, very similar to uploadFile
+    async getSuggestion() {
+      if (!this.analysisId) return
+
+      this.isSuggesting = true
+      this.suggestions = null
+      this.errorMessage = null
+
+      try {
+        const resp = await fetch(
+          `http://localhost:5005/suggestions/${this.analysisId}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt_key: 'review',
+              prompt: 'Please suggest improvements for these clauses.'
+            })
+          }
+        )
+
+        if (!resp.ok) {
+          const errJson = await resp.json().catch(() => null)
+          throw new Error(errJson?.error || resp.statusText)
+        }
+
+        // assume { items: [ "...", "..." ] }
+        this.suggestions = await resp.json()
+      } catch (err) {
+        console.error('Suggestion error:', err)
+        this.errorMessage = err.message
+      } finally {
+        this.isSuggesting = false
+      }
+    },
   }
 }
 </script>
