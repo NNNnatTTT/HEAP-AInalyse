@@ -34,13 +34,13 @@ services:
           - /scanner
         strip_path: true
 
-  - name: suggestion-service
-    url: ${SUGGESTION_SERVICE_URL}
-    routes:
-      - name: suggestion-route
-        paths:
-          - /suggestions
-        strip_path: true
+  #- name: suggestion-service
+  #  url: ${SUGGESTION_SERVICE_URL}
+  #  routes:
+  #    - name: suggestion-route
+  #      paths:
+  #        - /suggestions
+  #      strip_path: true
 
   # - name: suggestion-history-service
   #   url: ${SUGGESTION_HISTORY_SERVICE_URL}

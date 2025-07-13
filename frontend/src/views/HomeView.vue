@@ -72,53 +72,14 @@
         </div>
       </div>
 
-      <!-- Results + Suggest Section -->
-      <div
-        v-if="analysisResult"
-        class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl"
-      >
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">
-          Contract Summary
-        </h2>
+      <!-- Results Section -->
+      <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Contract Summary</h2>
         <ul class="list-disc pl-5 space-y-2 text-gray-700">
           <li v-for="(clause, i) in analysisResult" :key="i">
             <strong>{{ clause.title }}:</strong> {{ clause.summary }}
           </li>
         </ul>
-
-        <!-- Suggest Improvements -->
-        <div class="mt-6 text-center">
-          <button
-            @click="getSuggestion"
-            :disabled="isSuggesting || !analysisId"
-            class="cursor-pointer bg-green-500 hover:bg-green-600
-                  disabled:opacity-70 disabled:cursor-not-allowed
-                  text-white font-bold py-2 px-6 rounded-lg"
-          >
-            <span v-if="!isSuggesting">Suggest Improvements</span>
-            <span v-else>Suggesting…</span>
-          </button>
-        </div>
-
-        <!-- Suggestions Output -->
-        <div v-if="suggestions" class="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h3 class="text-xl font-semibold mb-2">AI Suggestions</h3>
-          <div v-if="suggestions.choices && suggestions.choices[0]">
-            <div class="prose max-w-none">
-              <p class="whitespace-pre-wrap">{{ suggestions.choices[0].message.content }}</p>
-            </div>
-          </div>
-          <div v-else-if="suggestions.items">
-            <ul class="list-disc pl-5 space-y-1">
-              <li v-for="(s, idx) in suggestions.items" :key="idx">
-                {{ s }}
-              </li>
-            </ul>
-          </div>
-          <div v-else>
-            <p class="text-gray-600">{{ suggestions }}</p>
-          </div>
-        </div>
       </div>
 
       <!-- Features Section -->
@@ -182,11 +143,11 @@
         <pre class="whitespace-pre-wrap text-gray-700">{{ page }}</pre>
       </div>
     </div>
+
   </div>
 </template>
-
 <script>
-import { uploadService, suggestionService } from '@/services'
+import { uploadService} from '@/services'
 
 export default {
   name: 'HomeView',
@@ -199,10 +160,7 @@ export default {
       errorMessage: null,
       successMessage: null,
       analysisResult: null,
-      pages: [],
-      analysisId: null,
-      isSuggesting: false,
-      suggestions: null,
+      pages: []
     }
   },
   methods: {
@@ -235,7 +193,6 @@ export default {
       this.errorMessage = null
       this.successMessage = null
       this.analysisResult = null
-      this.suggestions = null // Clear previous suggestions
 
       if (!file) return
 
@@ -260,8 +217,6 @@ export default {
       this.errorMessage = null
       this.successMessage = null
       this.analysisResult = null
-      this.suggestions = null
-      this.analysisId = null
       this.$refs.fileInput.value = ''
     },
     
@@ -279,27 +234,35 @@ export default {
       this.isUploading = true
       this.errorMessage = null
       this.uploadProgress = 0
-      this.suggestions = null // Clear previous suggestions
+      
 
       try {
         const formData = new FormData()
         formData.append('file', this.selectedFile)
 
         this.uploadProgress = 10
+        // 🔥 Only call the upload service and wait for its final result:
         const uploadResponse = await uploadService.uploadContract(formData)
-        this.uploadProgress = 100
-        
-        const result = uploadResponse.data
-        this.analysisId = result.analysis_result_id
 
-        // Process the analysis result for display
+        this.uploadProgress = 100
+        // — display whatever comes back from the upload service:
+        
+        // 1) get raw JSON back from uploadService
+        const result = uploadResponse.data
+
+        // 2) drill into the LLM content string
         const raw = result.choices?.[0]?.message?.content || ''
+
+        // 3) strip any leading/trailing quotes
         const stripped = raw.replace(/^"|"$/g, '')
+
+        // 4) split on the “;” delimiter into individual clause entries
         const entries = stripped
           .split(';')
           .map(s => s.trim())
           .filter(Boolean)
 
+        // 5) map each “[Title], [Problem], [Suggestion]” into an object
         this.analysisResult = entries.map(entry => {
           const m = entry.match(/\[(.*?)\]\s*,\s*\[(.*?)\]\s*,\s*\[(.*?)\]/)
           if (!m) return { title: entry, summary: entry }
@@ -310,47 +273,17 @@ export default {
           }
         })
 
+
         this.successMessage = 'File processed successfully!'
       } catch (error) {
         console.error('Upload error:', error)
         this.errorMessage =
           error.response?.data?.message || 'Upload failed. Please try again.'
       } finally {
-        this.isUploading = false
+        this.isUploading    = false
         this.uploadProgress = 0
       }
-    },
-
-    async getSuggestion() {
-      if (!this.analysisId) {
-        this.errorMessage = 'No analysis ID available. Please upload and analyze a contract first.'
-        return
-      }
-
-      this.isSuggesting = true
-      this.suggestions = null
-      this.errorMessage = null
-
-      try {
-        const suggestionData = {
-          prompt_key: 'review',
-          prompt: 'Please suggest improvements for these contract clauses and provide actionable recommendations.'
-        }
-
-        const response = await suggestionService.getSuggestions(this.analysisId, suggestionData)
-        this.suggestions = response.data
-        
-        // If no suggestions received, show a message
-        if (!this.suggestions || (this.suggestions.choices && this.suggestions.choices.length === 0)) {
-          this.errorMessage = 'No suggestions were generated. Please try again.'
-        }
-      } catch (error) {
-        console.error('Suggestion error:', error)
-        this.errorMessage = error.response?.data?.error || error.message || 'Failed to get suggestions. Please try again.'
-      } finally {
-        this.isSuggesting = false
-      }
-    },
+    }
   }
 }
 </script>
