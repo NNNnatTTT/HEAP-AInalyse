@@ -43,19 +43,38 @@ export const compareService = {
   getComparisonResult: (comparisonId) => api.get(`/compare/${comparisonId}`)
 }
 
-// History service - for retrieving user document history and analysis results
 export const historyService = {
-  // Get all documents for the current user with their analysis results
-  getUserHistory: () => api.get('/history'),
+
+  async getUserHistory() {
+    const response = await api.get('/history')
+    return response
+  },
   
-  // Get specific document with its analysis results
-  getDocumentHistory: (documentId) => api.get(`/history/${documentId}`),
+  async getHistorySummary() {
+    const response = await api.get('/history/summary')
+    return response
+  },
   
-  // Get only the analysis results for a specific document
-  getDocumentAnalysis: (documentId) => api.get(`/history/analysis/${documentId}`),
+  async getDocumentHistory(documentId) {
+    const response = await api.get(`/history/${documentId}`)
+    return response
+  },
   
-  // Get summary statistics of user's document history
-  getHistorySummary: () => api.get('/history/summary')
+  async getDocumentAnalysis(documentId) {
+    const response = await api.get(`/history/analysis/${documentId}`)
+    return response
+  },
+  
+  // ADD THESE NEW METHODS:
+  async analyzeDocument(documentId) {
+    const response = await api.post(`/history/analyze/${documentId}`)
+    return response
+  },
+  
+  async analyzeBatchDocuments() {
+    const response = await api.post('/history/analyze-batch')
+    return response
+  }
 }
 
 // Commented out services that are not currently active in Kong
