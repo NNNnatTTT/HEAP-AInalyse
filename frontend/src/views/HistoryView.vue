@@ -35,7 +35,7 @@
             >
               <svg v-if="batchAnalyzing" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 718-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               {{ batchAnalyzing ? 'Analyzing...' : `Analyze All (${summary.documents_without_analysis})` }}
             </button>
@@ -137,7 +137,7 @@
                   <span v-if="batchAnalyzing && !item.has_analysis" class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                     <svg class="animate-spin -ml-1 mr-1 h-3 w-3 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 718-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Processing...
                   </span>
@@ -176,7 +176,7 @@
                 >
                   <svg v-if="analyzingDocs.includes(item.document.id)" class="animate-spin -ml-1 mr-1 h-3 w-3 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 718-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   {{ analyzingDocs.includes(item.document.id) ? 'Analyzing...' : 'Analyze' }}
                 </button>
@@ -310,7 +310,7 @@
       </div>
     </div>
 
-    <!-- Analysis Detail Modal -->
+    <!-- Enhanced Analysis Detail Modal with Categorized Issues and Recommendations -->
     <div v-if="selectedAnalysis" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" @click="closeAnalysisModal">
       <div class="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden" @click.stop>
         <div class="flex justify-between items-center p-6 border-b">
@@ -324,14 +324,70 @@
         <div class="p-6 overflow-y-auto max-h-[70vh]">
           <div v-if="selectedAnalysis && selectedAnalysis.length > 0" class="space-y-6">
             <div v-for="(result, index) in selectedAnalysis" :key="index" class="border rounded-lg p-4">
-              <div class="flex justify-between items-start mb-3">
+              <div class="flex justify-between items-start mb-4">
                 <h3 class="font-medium text-gray-900">Analysis {{ index + 1 }}</h3>
                 <span class="text-xs text-gray-500">{{ formatDate(result.created_at) }}</span>
               </div>
               
-              <div v-if="result.content" class="mb-3">
-                <h4 class="text-sm font-medium text-gray-700 mb-2">Analysis Results:</h4>
-                <div class="bg-gray-50 p-4 rounded text-sm">
+              <div v-if="result.content" class="space-y-6">
+                <!-- Parse and display categorized analysis -->
+                <div v-if="parseCategorizedAnalysis(result.content)" class="space-y-6">
+                  <div v-for="(category, categoryIndex) in parseCategorizedAnalysis(result.content)" :key="categoryIndex" class="bg-gray-50 p-4 rounded-lg">
+                    <!-- Category Header -->
+                    <div class="mb-4">
+                      <h4 class="text-xl font-bold text-gray-800 mb-2">{{ category.name }}</h4>
+                      <div class="w-full h-px bg-gray-300"></div>
+                    </div>
+                    
+                    <!-- Issues Section -->
+                    <div v-if="category.issue" class="mb-4">
+                      <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <h5 class="text-lg font-semibold text-red-800">Issue Identified</h5>
+                      </div>
+                      <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-md">
+                        <div class="flex items-start">
+                          <div class="flex-shrink-0">
+                            <svg class="w-4 h-4 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                          </div>
+                          <div class="ml-3">
+                            <p class="text-red-700 text-sm">{{ category.issue }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Recommendations Section -->
+                    <div v-if="category.recommendation" class="mb-2">
+                      <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        <h5 class="text-lg font-semibold text-green-800">Recommendation</h5>
+                      </div>
+                      <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded-r-md">
+                        <div class="flex items-start">
+                          <div class="flex-shrink-0">
+                            <svg class="w-4 h-4 text-green-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                          </div>
+                          <div class="ml-3">
+                            <p class="text-green-700 text-sm">{{ category.recommendation }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fallback for non-structured content -->
+                <div v-else class="bg-gray-50 p-4 rounded text-sm">
+                  <h4 class="text-sm font-medium text-gray-700 mb-2">Analysis Results:</h4>
                   <div v-if="isJsonString(result.content)" class="space-y-2">
                     <div v-for="(item, idx) in parseAnalysisContent(result.content)" :key="idx" class="bg-white p-3 rounded border-l-4 border-blue-500">
                       <div class="font-medium text-gray-800 mb-1">{{ getAnalysisCategory(item) }}</div>
@@ -400,7 +456,7 @@ export default {
       
       try {
         const response = await historyService.getUserHistory()
-        console.log('Full response:', response)
+
         // Access the data property from axios response
         this.documents = response.data?.documents || []
       } catch (error) {
@@ -447,6 +503,51 @@ export default {
           content: content
         }
       })
+    },
+
+    // Parse categorized analysis with proper structure: [Title], [Issue], [Recommendation] repeating
+    parseCategorizedAnalysis(content) {
+      if (!content) return null
+      
+      try {
+        let parsedContent = content
+        
+        // If it's a JSON string, parse it first
+        if (this.isJsonString(content)) {
+          parsedContent = JSON.parse(content)
+        }
+        
+        // Extract all bracket contents using regex
+        const bracketMatches = parsedContent.match(/\[([^\]]+)\]/g)
+        if (!bracketMatches || bracketMatches.length === 0) {
+          return null
+        }
+        
+        // Extract content from brackets (remove the [ ] characters)
+        const bracketContents = bracketMatches.map(match => match.slice(1, -1).trim())
+        
+        const categories = []
+        
+        // Process items in groups of 3: Title, Issue, Recommendation
+        for (let i = 0; i < bracketContents.length; i += 3) {
+          const title = bracketContents[i]
+          const issue = bracketContents[i + 1]
+          const recommendation = bracketContents[i + 2]
+          
+          if (title) {
+            categories.push({
+              name: title,
+              issue: issue || null,
+              recommendation: recommendation || null
+            })
+          }
+        }
+        
+        return categories.length > 0 ? categories : null
+      } catch (e) {
+        console.error('Error parsing categorized analysis:', e)
+        return null
+      }
     },
     
     // Parse document pages from text with page separators
@@ -826,6 +927,12 @@ export default {
       const match = item.match(/\[([^\]]+)\]/)
       if (match) {
         return match[1].split(' - ')[0] || 'Analysis'
+      }
+      
+      // For items without brackets, try to extract first few words as category
+      const words = item.split(' ')
+      if (words.length > 2) {
+        return words.slice(0, 2).join(' ').toUpperCase()
       }
       
       return 'Analysis Item'
