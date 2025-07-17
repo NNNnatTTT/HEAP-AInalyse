@@ -58,31 +58,59 @@
             </div>
           </div>
 
-          <!-- Upload Button -->
+          <!-- Upload Button with Loading Spinner -->
           <div v-if="selectedFile" class="mt-6 text-center">
             <button 
               @click="uploadFile" 
               :disabled="isUploading"
               class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-lg text-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg"
             >
-              <span v-if="!isUploading">Analyze Contract</span>
-              <span v-else>Analyzing... {{ uploadProgress }}%</span>
+              <template v-if="!isUploading">
+                Analyze Contract
+              </template>
+              <template v-else>
+                <span class="flex items-center justify-center">
+                  Analyzing
+                  &nbsp;
+                  <svg class="animate-spin mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </span>
+              </template>
             </button>
           </div>
+
+
         </div>
       </div>
 
       <!-- Results Section -->
-      <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
+      <!-- <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
         <h2 class="text-2xl font-bold mb-4 text-gray-800">Contract Summary</h2>
         <ul class="list-disc pl-5 space-y-2 text-gray-700">
           <li v-for="(clause, i) in analysisResult" :key="i">
             <strong>{{ clause.title }}:</strong> {{ clause.summary }}
           </li>
         </ul>
+      </div> -->
+
+      <!-- Results Section -->
+      <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-6 bg-gradient-to-br from-gray-100 to-white rounded-xl shadow-xl border border-gray-200">
+        <h2 class="text-2xl font-bold mb-6 text-gray-900 text-center rounded-t-lg p-4 border-b border-gray-300">Contract Overview</h2>
+        <div class="space-y-5">
+          <div v-for="(clause, i) in analysisResult" :key="i" class="bg-white rounded-lg shadow-lg p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <h3 class="text-xl font-semibold text-gray-800 mb-3 bg-blue-50 p-2 rounded" style="text-transform: none;">{{ clause.title }}</h3>
+            <p class="text-gray-600 leading-relaxed">
+              <span class="font-medium text-gray-800">Issue:</span> {{ clause.issue }} <br>
+              <span class="font-medium text-gray-800">Suggestion:</span> {{ clause.suggestion }}
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- Features Section -->
+      <section v-if="!analysisResult || !analysisResult.length" class="mt-6 p-4 bg-blue-50 rounded shadow">
       <div class="bg-white rounded-xl p-8 shadow-2xl">
         <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">
           What We Analyze
@@ -118,6 +146,7 @@
           </div>
         </div>
       </div>
+      </section>
 
       <!-- Error/Success Messages -->
       <div v-if="errorMessage" class="max-w-2xl mx-auto mt-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-center font-semibold">
@@ -156,7 +185,6 @@ export default {
       selectedFile: null,
       isDragOver: false,
       isUploading: false,
-      uploadProgress: 0,
       errorMessage: null,
       successMessage: null,
       analysisResult: null,
@@ -227,61 +255,104 @@ export default {
       const i = Math.floor(Math.log(bytes) / Math.log(k))
       return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
     },
-    
+
+    parseSummary(summary) {
+      const [issue, suggestion] = summary.split(' -> ');
+      return {
+        issue: issue.trim(),
+        suggestion: suggestion ? suggestion.trim() : ''
+      };
+    }, 
+
+    // async uploadFile() {
+    //   if (!this.selectedFile) return
+      
+    //   this.isUploading = true
+    //   this.errorMessage = null
+      
+
+    //   try {
+    //     const formData = new FormData()
+    //     formData.append('file', this.selectedFile)
+
+    //     // 🔥 Only call the upload service and wait for its final result:
+    //     const uploadResponse = await uploadService.uploadContract(formData)
+
+    //     // — display whatever comes back from the upload service:
+        
+    //     // 1) get raw JSON back from uploadService
+    //     const result = uploadResponse.data
+
+    //     // 2) drill into the LLM content string
+    //     const raw = result.choices?.[0]?.message?.content || ''
+
+    //     // 3) strip any leading/trailing quotes
+    //     const stripped = raw.replace(/^"|"$/g, '')
+
+    //     // 4) split on the “;” delimiter into individual clause entries
+    //     const entries = stripped
+    //       .split(';')
+    //       .map(s => s.trim())
+    //       .filter(Boolean)
+
+    //     // 5) map each “[Title], [Problem], [Suggestion]” into an object
+    //     this.analysisResult = entries.map(entry => {
+    //       const m = entry.match(/\[(.*?)\]\s*,\s*\[(.*?)\]\s*,\s*\[(.*?)\]/)
+    //       if (!m) return { title: entry, summary: entry }
+    //       const [, title, problem, suggestion] = m
+    //       return { 
+    //         title, 
+    //         summary: problem + ' → ' + suggestion
+    //       }
+    //     })
+    //     this.successMessage = 'File processed successfully!'
+    //   } catch (error) {
+    //     console.error('Upload error:', error)
+    //     this.errorMessage =
+    //       error.response?.data?.message || 'Upload failed. Please try again.'
+    //   } finally {
+    //     this.isUploading    = false
+    //   }
+    // }
+
     async uploadFile() {
       if (!this.selectedFile) return
       
       this.isUploading = true
       this.errorMessage = null
-      this.uploadProgress = 0
-      
 
       try {
         const formData = new FormData()
         formData.append('file', this.selectedFile)
 
-        this.uploadProgress = 10
-        // 🔥 Only call the upload service and wait for its final result:
         const uploadResponse = await uploadService.uploadContract(formData)
 
-        this.uploadProgress = 100
-        // — display whatever comes back from the upload service:
-        
-        // 1) get raw JSON back from uploadService
         const result = uploadResponse.data
-
-        // 2) drill into the LLM content string
         const raw = result.choices?.[0]?.message?.content || ''
-
-        // 3) strip any leading/trailing quotes
         const stripped = raw.replace(/^"|"$/g, '')
-
-        // 4) split on the “;” delimiter into individual clause entries
         const entries = stripped
           .split(';')
           .map(s => s.trim())
           .filter(Boolean)
 
-        // 5) map each “[Title], [Problem], [Suggestion]” into an object
         this.analysisResult = entries.map(entry => {
           const m = entry.match(/\[(.*?)\]\s*,\s*\[(.*?)\]\s*,\s*\[(.*?)\]/)
           if (!m) return { title: entry, summary: entry }
           const [, title, problem, suggestion] = m
+          const { issue, suggestion: parsedSuggestion } = this.parseSummary(`${problem} -> ${suggestion}`);
           return { 
             title, 
-            summary: problem + ' → ' + suggestion
+            issue,
+            suggestion: parsedSuggestion
           }
         })
-
-
         this.successMessage = 'File processed successfully!'
       } catch (error) {
         console.error('Upload error:', error)
         this.errorMessage =
           error.response?.data?.message || 'Upload failed. Please try again.'
       } finally {
-        this.isUploading    = false
-        this.uploadProgress = 0
+        this.isUploading = false
       }
     }
   }
