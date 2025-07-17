@@ -86,23 +86,14 @@
       </div>
 
       <!-- Results Section -->
-      <!-- <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-4 bg-white rounded-xl shadow-2xl">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Contract Summary</h2>
-        <ul class="list-disc pl-5 space-y-2 text-gray-700">
-          <li v-for="(clause, i) in analysisResult" :key="i">
-            <strong>{{ clause.title }}:</strong> {{ clause.summary }}
-          </li>
-        </ul>
-      </div> -->
-
-      <!-- Results Section -->
       <div v-if="analysisResult" class="max-w-2xl mx-auto mt-8 p-6 bg-gradient-to-br from-gray-100 to-white rounded-xl shadow-xl border border-gray-200">
         <h2 class="text-2xl font-bold mb-6 text-gray-900 text-center rounded-t-lg p-4 border-b border-gray-300">Contract Overview</h2>
         <div class="space-y-5">
           <div v-for="(clause, i) in analysisResult" :key="i" class="bg-white rounded-lg shadow-lg p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
             <h3 class="text-xl font-semibold text-gray-800 mb-3 bg-blue-50 p-2 rounded" style="text-transform: none;">{{ clause.title }}</h3>
             <p class="text-gray-600 leading-relaxed">
-              <span class="font-medium text-gray-800">Issue:</span> {{ clause.issue }} <br>
+              <span class="font-medium text-gray-800">Issue:</span> {{ clause.issue }}
+              <br><br>
               <span class="font-medium text-gray-800">Suggestion:</span> {{ clause.suggestion }}
             </p>
           </div>
@@ -263,57 +254,6 @@ export default {
         suggestion: suggestion ? suggestion.trim() : ''
       };
     }, 
-
-    // async uploadFile() {
-    //   if (!this.selectedFile) return
-      
-    //   this.isUploading = true
-    //   this.errorMessage = null
-      
-
-    //   try {
-    //     const formData = new FormData()
-    //     formData.append('file', this.selectedFile)
-
-    //     // 🔥 Only call the upload service and wait for its final result:
-    //     const uploadResponse = await uploadService.uploadContract(formData)
-
-    //     // — display whatever comes back from the upload service:
-        
-    //     // 1) get raw JSON back from uploadService
-    //     const result = uploadResponse.data
-
-    //     // 2) drill into the LLM content string
-    //     const raw = result.choices?.[0]?.message?.content || ''
-
-    //     // 3) strip any leading/trailing quotes
-    //     const stripped = raw.replace(/^"|"$/g, '')
-
-    //     // 4) split on the “;” delimiter into individual clause entries
-    //     const entries = stripped
-    //       .split(';')
-    //       .map(s => s.trim())
-    //       .filter(Boolean)
-
-    //     // 5) map each “[Title], [Problem], [Suggestion]” into an object
-    //     this.analysisResult = entries.map(entry => {
-    //       const m = entry.match(/\[(.*?)\]\s*,\s*\[(.*?)\]\s*,\s*\[(.*?)\]/)
-    //       if (!m) return { title: entry, summary: entry }
-    //       const [, title, problem, suggestion] = m
-    //       return { 
-    //         title, 
-    //         summary: problem + ' → ' + suggestion
-    //       }
-    //     })
-    //     this.successMessage = 'File processed successfully!'
-    //   } catch (error) {
-    //     console.error('Upload error:', error)
-    //     this.errorMessage =
-    //       error.response?.data?.message || 'Upload failed. Please try again.'
-    //   } finally {
-    //     this.isUploading    = false
-    //   }
-    // }
 
     async uploadFile() {
       if (!this.selectedFile) return
