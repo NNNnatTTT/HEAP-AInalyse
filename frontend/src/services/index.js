@@ -20,19 +20,19 @@ export const uploadService = {
   })
 }
 
-// Analysis service - using AI model endpoint
-export const analysisService = {
-  analyzeContract: (pages, promptKey, prompt) =>
-    api.post('/analyse', { pages, promptKey, prompt }),
-  compareContracts: (data) => api.post('/analyse/compare', data)
-}
-
 // Scanner service - matches Kong configuration
 export const scannerService = {
   scanContract: (formData) => api.post('/scanner', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   getScanResults: (scanId) => api.get(`/scanner/${scanId}`)
+}
+
+// Analysis service - using AI model endpoint
+export const analysisService = {
+  analyzeContract: (pages, promptKey, prompt) =>
+    api.post('/analyse', { pages, promptKey, prompt }),
+  compareContracts: (data) => api.post('/analyse/compare', data)
 }
 
 // Compare service - for contract comparison functionality
