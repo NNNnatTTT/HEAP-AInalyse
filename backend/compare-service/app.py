@@ -17,8 +17,8 @@ with open(os.path.join(BASE, "prompts", "compare.json")) as f:
 USER_PROMPT = prompt_data["prompt"]
 
 # Service URLs
-AI_MODEL_URL = os.getenv("AI_MODEL_URL", "http://ai-model:5020")
-SCANNER_URL = os.getenv("SCANNER_URL", "http://scanner:5004")
+AI_MODEL_URL = os.getenv("AI_MODEL_URL")
+SCANNER_URL = os.getenv("SCANNER_URL")
 
 def get_current_user():
     """Extract user UUID from JWT (Kong already validated it)"""

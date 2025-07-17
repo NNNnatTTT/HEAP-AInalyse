@@ -301,9 +301,9 @@ export default {
 
         const res = await compareService.compareContracts(fd)
 
-        // 🔍 Inspect exactly what the API returned
-        console.log('compareContracts → raw response data:', res.data)
-        console.log('Type of response data:', typeof res.data)
+        // // 🔍 Inspect exactly what the API returned
+        // console.log('compareContracts → raw response data:', res.data)
+        // console.log('Type of response data:', typeof res.data)
 
         this.comparisonResults = res.data
       } catch (e) {

@@ -19,8 +19,6 @@
 
       <div class="bg-white shadow-xl rounded-lg p-8">
         <form @submit.prevent="handleSubmit" class="space-y-6">
-          <!-- Add these after <form @submit.prevent="handleSubmit" class="space-y-6"> -->
-
           <!-- Success Message -->
           <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
             <div class="flex">
@@ -86,22 +84,6 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input id="remember" v-model="form.remember" type="checkbox"
-                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded" />
-              <label for="remember" class="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
-            <div class="text-sm">
-              <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-                Forgot your password?
-              </a>
-            </div>
-          </div>
-
           <div>
             <button type="submit" :disabled="loading"
               class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors">
@@ -130,10 +112,9 @@ export default {
     return {
       form: {
         email: '',
-        password: '',
-        remember: false
+        password: ''
       },
-      showPassword: false,  // Added missing property
+      showPassword: false,
       loading: false,
       error: null,
       successMessage: null
@@ -145,7 +126,7 @@ export default {
     }
   },
   methods: {
-    async handleSubmit() {  // Changed from handleLogin to match template
+    async handleSubmit() {
       if (!this.isFormValid) return
 
       this.loading = true
@@ -160,7 +141,6 @@ export default {
         })
 
         // Store JWT token from auth service response
-        // In your login component's handleSubmit method
         localStorage.setItem('jwt_token', response.data.access_token)
         if (response.data.user) {
           localStorage.setItem('user_info', JSON.stringify(response.data.user))
@@ -171,7 +151,6 @@ export default {
           window.refreshAuth()
         }
 
-
         this.successMessage = 'Login successful! Redirecting...'
 
         // Redirect to home page
@@ -181,7 +160,7 @@ export default {
 
       } catch (error) {
         console.error('Login error:', error)
-        this.error = error.response?.data?.msg || 'Invalid email or password'  // Changed from 'message' to 'msg'
+        this.error = error.response?.data?.msg || 'Invalid email or password'
       } finally {
         this.loading = false
       }

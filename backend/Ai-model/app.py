@@ -5,7 +5,7 @@ from ai_wrapper import OpenRouterWrapper
 import requests
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:5173"]}})
+CORS(app)
 
 # initialize once
 ai_client = OpenRouterWrapper()

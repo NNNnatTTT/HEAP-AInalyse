@@ -6,112 +6,72 @@ services:
     url: http://auth:5001
     routes:
       - name: auth-route
-        paths:
-          - /auth
+        paths: [/auth]
         strip_path: true
-
-  # - name: open-router-wrapper-service
-  #   url: http://open-router-wrapper:5002
-  #   routes:
-  #     - name: open-router-wrapper-route
-  #       paths:
-  #         - /open-router
-  #       strip_path: true
 
   - name: review-service
     url: http://review-service:5003
     routes:
       - name: review-route
-        paths:
-          - /review-service
+        paths: [/review-service]
         strip_path: true
 
   - name: scanner
     url: http://scanner:5004
     routes:
       - name: scanner-route
-        paths:
-          - /scanner
+        paths: [/scanner]
         strip_path: true
-
-  #- name: suggestion-service
-  #  url: http://suggestion-service:5005
-  #  routes:
-  #    - name: suggestion-route
-  #      paths:
-  #        - /suggestions
-  #      strip_path: true
-
-  # - name: suggestion-history-service
-  #   url: http://suggestion-history:5006
-  #   routes:
-  #     - name: suggestion-history-route
-  #       paths:
-  #         - /suggestion-history
-  #       strip_path: true
 
   - name: upload-service
     url: http://upload-service:5007
     routes:
       - name: upload-route
-        paths:
-          - /upload-service
+        paths: [/upload-service]
         strip_path: false
 
   - name: analyse-results
     url: http://analyse-results:5008
     routes:
       - name: analyse-route
-        paths:
-          - /analyse-results
+        paths: [/analyse-results]
         strip_path: true
 
   - name: compare-service
     url: http://compare-service:5010
     routes:
       - name: compare-route
-        paths:
-          - /compare
+        paths: [/compare]
         strip_path: true
 
   - name: ai-model
     url: http://ai-model:5020
     routes:
       - name: ai-route
-        paths: 
-          - /ai
+        paths: [/ai]
         strip_path: false
 
   - name: document-storage-service
     url: http://document-storage-service:5009
     routes:
       - name: document-storage-route
-        paths: 
-          - /document-storage-service
+        paths: [/document-storage-service]
         strip_path: true
 
   - name: history-service
     url: http://history-service:5030
     routes:
       - name: history-route
-        paths:
-          - /history
+        paths: [/history]
         strip_path: false
 
-
 plugins:
+  # Global CORS Plugin
   - name: cors
+    enabled: true
     config:
-      origins:
-        - "*"
-      methods:
-        - GET
-        - POST
-        - PUT
-        - DELETE
-        - PATCH
-        - OPTIONS
-        - HEAD
+      origins: ["*"]
+      methods: [GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD]
       headers:
         - Accept
         - Accept-Version
@@ -121,143 +81,58 @@ plugins:
         - Date
         - X-Auth-Token
         - Authorization
-      exposed_headers:
-        - X-Auth-Token
+      exposed_headers: [X-Auth-Token]
       credentials: true
       max_age: 3600
       preflight_continue: false
+
+  # JWT Plugin Template
+  - name: jwt
+    service: review-service
     enabled: true
+    config: &jwt_config
+      secret_is_base64: false
+      key_claim_name: kid
+      claims_to_verify: [exp]
+      header_names: [authorization]
+      uri_param_names: []
+      cookie_names: []
 
-  # JWT plugins for protected services
-  # - name: jwt
-  #   service: open-router-wrapper-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  - name: jwt
+    service: scanner
+    enabled: true
+    config: *jwt_config
 
-  # - name: jwt
-  #   service: review-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  - name: jwt
+    service: upload-service
+    enabled: true
+    config: *jwt_config
 
-  # - name: jwt
-  #   service: scanner
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  - name: jwt
+    service: analyse-results
+    enabled: true
+    config: *jwt_config
 
-  # - name: jwt
-  #   service: suggestion-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  - name: jwt
+    service: compare-service
+    enabled: true
+    config: *jwt_config
 
-  # - name: jwt
-  #   service: suggestion-history-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  - name: jwt
+    service: document-storage-service
+    enabled: true
+    config: *jwt_config
 
-  # - name: jwt
-  #   service: upload-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  - name: jwt
+    service: history-service
+    enabled: true
+    config: *jwt_config
 
-  # - name: jwt
-  #   service: analyse-results
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
-
-  # - name: jwt
-  #   service: compare-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
-
-  # - name: jwt
-  #   service: document-storage-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
-
-  # - name: jwt
-  #   service: history-service
-  #   config:
-  #     secret_is_base64: false
-  #     key_claim_name: kid
-  #     claims_to_verify:
-  #       - exp
-  #     header_names:
-  #       - authorization
-  #     uri_param_names: []
-  #     cookie_names: []
-  #   enabled: true
+  # Add this if ai-model should be protected
+  - name: jwt
+    service: ai-model
+    enabled: true
+    config: *jwt_config
 
 consumers:
   - username: login_server_issuer

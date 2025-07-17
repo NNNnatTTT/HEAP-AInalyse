@@ -12,6 +12,7 @@ CORS(app)
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+AI_MODEL_URL = os.getenv("AI_MODEL_URL")
 
 
 
@@ -21,8 +22,8 @@ with open(os.path.join(BASE, "prompts", "review-prompt.json")) as f:
     prompt_data = json.load(f)
 USER_PROMPT = prompt_data["prompt"]
 
-AI_MODEL_URL = os.getenv("AI_MODEL_URL", "http://ai-model:5020")
-ANALYZE_RESULTS_URL = os.getenv("ANALYZE_RESULTS_URL", "http://analyse-results:5008")
+AI_MODEL_URL = os.getenv("AI_MODEL_URL")
+ANALYZE_RESULTS_URL = os.getenv("ANALYZE_RESULTS_URL")
 
 app.logger.setLevel(logging.INFO)
 

@@ -7,11 +7,7 @@ import io, uuid, tempfile
 import jwt
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    "origins": ["http://localhost:5173"],
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type", "Authorization"]
-}})
+CORS(app)
 
 # Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")

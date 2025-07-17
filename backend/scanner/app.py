@@ -8,11 +8,7 @@ import os
 import requests
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {
-    "origins": ["http://localhost:5173"],
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type"]
-}})
+CORS(app)
 # Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")

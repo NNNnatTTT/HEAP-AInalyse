@@ -43,7 +43,7 @@ services:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: "config/kong.yml"
       KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
-      KONG_JWT_SECRET: ${JWT_SECRET}
+      KONG_JWT_SECRET: ${KONG_JWT_SECRET}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
     volumes:
@@ -59,18 +59,7 @@ services:
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
-      JWT_SECRET: ${JWT_SECRET}
-
-  # open-router-wrapper:
-  #   build:
-  #     context: ./open-router-wrapper
-  #     dockerfile: Dockerfile
-  #   container_name: open-router-wrapper
-  #   ports:
-  #     - "5002:5002"
-  #   environment:
-  #     SUPABASE_URL: ${SUPABASE_URL}
-  #     SUPABASE_KEY: ${SUPABASE_KEY}
+      KONG_JWT_SECRET: ${KONG_JWT_SECRET}
 
   review-service:
     build:
@@ -83,6 +72,7 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
       ANALYZE_RESULTS_URL: ${ANALYZE_RESULTS_URL}
+      AI_MODEL_URL: ${AI_MODEL_SERVICE_URL}
 
   scanner:
     build:
@@ -95,28 +85,6 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
 
-  # suggestion-service:
-  #   build:
-  #     context: ./suggestion-service
-  #     dockerfile: Dockerfile
-  #   container_name: suggestion-service
-  #   ports:
-  #     - "5005:5005"
-  #   environment:
-  #     SUPABASE_URL: ${SUPABASE_URL}
-  #     SUPABASE_KEY: ${SUPABASE_KEY}
-
-  # suggestion-history:
-  #   build:
-  #     context: ./suggestion-history
-  #     dockerfile: Dockerfile
-  #   container_name: suggestion-history
-  #   ports:
-  #     - "5006:5006"
-  #   environment:
-  #     SUPABASE_URL: ${SUPABASE_URL}
-  #     SUPABASE_KEY: ${SUPABASE_KEY}
-
   upload-service:
     build:
       context: ./upload-service
@@ -127,6 +95,9 @@ services:
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
+      SCANNER_SERVICE_URL: ${SCANNER_SERVICE_URL}
+      DOCUMENT_STORAGE_SERVICE_URL: ${DOCUMENT_STORAGE_SERVICE_URL}
+      REVIEW_SERVICE_URL: ${REVIEW_SERVICE_URL}
 
   analyse-results:
     build:
@@ -174,7 +145,7 @@ services:
     environment:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SUPABASE_KEY}
-  # History Service (newly created)
+
   history-service:
     build:
       context: ./history-service
@@ -185,8 +156,4 @@ services:
     environment:
       DOCUMENT_STORAGE_SERVICE_URL: ${DOCUMENT_STORAGE_SERVICE_URL}
       ANALYSE_RESULTS_SERVICE_URL: ${ANALYSE_RESULTS_SERVICE_URL}
-      REVIEW_SERVICE_URL: ${REVIEW_SERVICE_URL}  # Add this line
-
-
-
-
+      REVIEW_SERVICE_URL: ${REVIEW_SERVICE_URL}

@@ -14,7 +14,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # JWT secret for Kong (should match Kong configuration)
-JWT_SECRET = "b18e4adfc5d84177cd8c053e5baaf0913504dafd2f1448ea374614aa0262b312"
+JWT_SECRET = os.getenv("KONG_JWT_SECRET")
 
 def generate_jwt_token(user_id, email):
     """Generate a JWT token that Kong can validate"""
