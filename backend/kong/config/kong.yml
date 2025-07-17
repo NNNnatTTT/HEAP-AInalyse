@@ -3,7 +3,7 @@ _transform: true
 
 services:
   - name: auth-service
-    url: http://auth:5001
+    url: http://auth-service:5001
     routes:
       - name: auth-route
         paths: [/auth]
@@ -86,53 +86,7 @@ plugins:
       max_age: 3600
       preflight_continue: false
 
-  # JWT Plugin Template
-  - name: jwt
-    service: review-service
-    enabled: true
-    config: &jwt_config
-      secret_is_base64: false
-      key_claim_name: kid
-      claims_to_verify: [exp]
-      header_names: [authorization]
-      uri_param_names: []
-      cookie_names: []
-
-  - name: jwt
-    service: scanner
-    enabled: true
-    config: *jwt_config
-
-  - name: jwt
-    service: upload-service
-    enabled: true
-    config: *jwt_config
-
-  - name: jwt
-    service: analyse-results
-    enabled: true
-    config: *jwt_config
-
-  - name: jwt
-    service: compare-service
-    enabled: true
-    config: *jwt_config
-
-  - name: jwt
-    service: document-storage-service
-    enabled: true
-    config: *jwt_config
-
-  - name: jwt
-    service: history-service
-    enabled: true
-    config: *jwt_config
-
-  # Add this if ai-model should be protected
-  - name: jwt
-    service: ai-model
-    enabled: true
-    config: *jwt_config
+  
 
 consumers:
   - username: login_server_issuer

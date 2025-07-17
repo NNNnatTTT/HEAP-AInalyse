@@ -118,8 +118,8 @@ services:
     ports:
       - "5010:5010"
     environment:
-      AI_MODEL_URL: ${AI_MODEL_URL}
-      SCANNER_URL: ${SCANNER_URL}
+      AI_MODEL_URL: ${AI_MODEL_SERVICE_URL}
+      SCANNER_URL: ${SCANNER_SERVICE_URL}
     depends_on:
       - scanner
       - ai-model
