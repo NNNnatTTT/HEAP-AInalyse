@@ -8,6 +8,16 @@ To stop, run stop-all.bat or stop-all.sh to stop the containers
 For .sh, use "chmod +x start-all.sh" or "chmod +x stop-all.sh"
 
 To host on cloud:
-Copy frontend into the front end ECs, backend to the backend ECs
-Set up a nginx server in the frontend ECs to act as a reverse proxy to the backend private ip
-For backend just docker compose up 
+Distribute Application Components:
+Deploy the frontend application to the designated frontend EC2 instances.
+Deploy the backend application to the designated backend EC2 instances.
+
+Configure Reverse Proxy:
+On frontend EC2 instance, install and configure Nginx to serve the frontend application and act as a reverse proxy.
+The Nginx server should forward API requests to the backend service using the private IP address of the backend EC2 instances.
+
+Start Backend Services:
+On backend EC2 instance, navigate to the backend project directory and execute:
+docker compose up --build -d
+
+Ensure Docker and Docker Compose are properly installed and configured on the backend instances.
